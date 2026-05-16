@@ -215,6 +215,8 @@
         <button class="hdr-btn" id="exportBtn">⬇ Backup exportieren</button>
         <label class="hdr-btn" for="importFile">⬆ Backup importieren</label>
         <input type="file" id="importFile" accept=".json" style="display:none;">
+        <label class="hdr-btn" for="csvImportFile" style="background:rgba(124,58,237,0.15);border-color:rgba(124,58,237,0.4);color:#a78bfa;">📋 CSV importieren</label>
+        <input type="file" id="csvImportFile" accept=".csv,.txt" style="display:none;">
         <div style="color:var(--muted);font-size:12px;letter-spacing:1px;">powered by <span class="rawg-badge">RAWG</span></div>
       </div>
     </div>
@@ -1215,7 +1217,6 @@ document.getElementById('importFile').addEventListener('change',function(){
       const parsed=JSON.parse(e.target.result);
       const imported=Array.isArray(parsed)?parsed:(parsed.games||null);
       if(!Array.isArray(imported))throw new Error();
-      // migrate old single-platform
       const migrated=imported.map(g=>({...g,platforms:g.platforms?g.platforms:g.platform?[g.platform]:[]}));
       if(!confirm(`${migrated.length} Spiele importieren? Deine aktuelle Liste wird ersetzt.`))return;
       games=migrated;nextId=games.length?Math.max(...games.map(g=>g.id))+1:1;
@@ -1224,6 +1225,121 @@ document.getElementById('importFile').addEventListener('change',function(){
   };
   reader.readAsText(file);this.value='';
 });
+
+// ─── CSV IMPORT ───────────────────────────────────────────────────────────
+document.getElementById('csvImportFile').addEventListener('change',function(){
+  const file=this.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=async e=>{
+    const lines=e.target.result.split('\n').map(l=>l.trim()).filter(l=>l.length>0);
+    // Each line: commas are word separators within the title → join with space
+    const titles=lines.map(l=>l.split(',').map(w=>w.trim()).join(' ').trim()).filter(t=>t.length>0);
+    if(!titles.length){alert('❌ Keine Spielnamen gefunden.');return;}
+
+    // Check duplicates against existing library (case-insensitive)
+    const existingTitles=new Set(games.map(g=>g.title.toLowerCase().trim()));
+    const newTitles=titles.filter(t=>!existingTitles.has(t.toLowerCase().trim()));
+    const dupes=titles.length-newTitles.length;
+
+    if(!newTitles.length){alert(`Alle ${dupes} Spiele sind bereits in deiner Bibliothek vorhanden.`);return;}
+
+    const msg=dupes>0
+      ?`${titles.length} Spiele gefunden.\n${dupes} bereits vorhanden (werden übersprungen).\n${newTitles.length} neue Spiele werden importiert mit RAWG-Daten.\n\nJetzt starten?`
+      :`${newTitles.length} Spiele werden mit RAWG-Daten importiert.\n\nJetzt starten?`;
+    if(!confirm(msg))return;
+
+    // Show progress modal
+    openCsvProgress(newTitles.length);
+
+    let imported=0,notFound=0;
+    const newGames=[];
+
+    for(let i=0;i<newTitles.length;i++){
+      const title=newTitles[i];
+      updateCsvProgress(i+1,newTitles.length,title);
+
+      let gameData=null;
+      try{
+        const rawgUrl=`https://api.rawg.io/api/games?key=${RAWG_KEY}&search=${encodeURIComponent(title)}&page_size=1&search_precise=false`;
+        const strategies=[
+          async()=>{const r=await fetch(rawgUrl,{signal:AbortSignal.timeout(5000)});if(!r.ok)throw new Error();return r.json();},
+          async()=>{const r=await fetch(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(rawgUrl)}`,{signal:AbortSignal.timeout(7000)});if(!r.ok)throw new Error();return r.json();},
+          async()=>{const r=await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(rawgUrl)}`,{signal:AbortSignal.timeout(7000)});if(!r.ok)throw new Error();const j=await r.json();return JSON.parse(j.contents);},
+        ];
+        let data=null;
+        for(const fn of strategies){try{data=await fn();if(data&&data.results)break;}catch(e){continue;}}
+        if(data&&data.results&&data.results.length>0) gameData=data.results[0];
+      }catch(e){}
+
+      let genre='';
+      if(gameData?.genres?.length){
+        const m=GENRE_MAP[gameData.genres[0].slug];
+        if(m)genre=m;
+      }
+
+      newGames.push({
+        id:nextId++,
+        title:gameData?gameData.name:title,
+        status:'backlog',
+        platforms:[],
+        genre,
+        rating:null,
+        plays:0,
+        emoji:'🎮',
+        notes:'',
+        coverUrl:gameData?.background_image||'',
+      });
+
+      if(gameData)imported++;else notFound++;
+      await new Promise(r=>setTimeout(r,350)); // rate limit pause
+    }
+
+    games=games.concat(newGames);
+    save(games);
+    render();
+    closeCsvProgress();
+    alert(`✅ CSV Import abgeschlossen!\n\n${imported} Spiele mit RAWG-Daten gefunden\n${notFound} Spiele ohne RAWG-Treffer (Titel trotzdem importiert)\n${dupes} Duplikate übersprungen`);
+  };
+  reader.readAsText(file);this.value='';
+});
+
+function openCsvProgress(total){
+  let m=document.getElementById('csvProgressModal');
+  if(!m){
+    m=document.createElement('div');
+    m.id='csvProgressModal';
+    m.className='modal-overlay';
+    m.innerHTML=`<div class="modal" style="max-width:420px;text-align:center;">
+      <div class="modal-title">📋 CSV Import läuft…</div>
+      <p id="csvProgressTitle" style="font-size:14px;color:var(--muted);margin-bottom:16px;min-height:20px;"></p>
+      <div style="background:var(--border);border-radius:4px;height:6px;overflow:hidden;margin-bottom:12px;">
+        <div id="csvProgressFill" style="height:100%;background:var(--accent);border-radius:4px;width:0%;transition:width 0.3s;"></div>
+      </div>
+      <p id="csvProgressCount" style="font-size:13px;color:var(--muted);">0 / ${total}</p>
+      <p style="font-size:12px;color:var(--muted);margin-top:12px;">RAWG wird für jedes Spiel abgefragt — bitte warten…</p>
+    </div>`;
+    document.body.appendChild(m);
+  }else{
+    m.classList.remove('hidden');
+    document.getElementById('csvProgressCount').textContent=`0 / ${total}`;
+    document.getElementById('csvProgressFill').style.width='0%';
+  }
+}
+
+function updateCsvProgress(current,total,title){
+  const pct=Math.round((current/total)*100);
+  const fill=document.getElementById('csvProgressFill');
+  const count=document.getElementById('csvProgressCount');
+  const t=document.getElementById('csvProgressTitle');
+  if(fill)fill.style.width=pct+'%';
+  if(count)count.textContent=`${current} / ${total} (${pct}%)`;
+  if(t)t.textContent=title;
+}
+
+function closeCsvProgress(){
+  const m=document.getElementById('csvProgressModal');
+  if(m)m.classList.add('hidden');
+}
 
 // ─── CLOUD SETUP MODAL ────────────────────────────────────────────────────
 function openCloudModal(){
