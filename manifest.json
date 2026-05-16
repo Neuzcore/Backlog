@@ -1,0 +1,25 @@
+{
+  "name": "Neuzcores Gaming Backlog",
+  "short_name": "Gaming Backlog",
+  "description": "Persönliche Videospiel-Backlog-Verwaltung mit RAWG-Datenbank und Cloud-Sync",
+  "start_url": "./game-backlog.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#080b14",
+  "theme_color": "#080b14",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
