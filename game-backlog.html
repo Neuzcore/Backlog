@@ -1254,8 +1254,12 @@ document.getElementById('csvImportFile').addEventListener('change',function(){
     let imported=0,notFound=0;
     const newGames=[];
 
+    // Recalculate nextId to avoid duplicate IDs with existing games
+    nextId=games.length?Math.max(...games.map(g=>g.id))+1:1;
+
+    // Process strictly sequentially
     for(let i=0;i<newTitles.length;i++){
-      const title=newTitles[i];
+      const title=newTitles[i]; // bind title to this iteration
       updateCsvProgress(i+1,newTitles.length,title);
 
       let gameData=null;
@@ -1277,9 +1281,11 @@ document.getElementById('csvImportFile').addEventListener('change',function(){
         if(m)genre=m;
       }
 
+      // Use nextId++ and immediately increment to guarantee unique IDs
+      const newId=nextId++;
       newGames.push({
-        id:nextId++,
-        title:gameData?gameData.name:title,
+        id:newId,
+        title:gameData?gameData.name:title, // RAWG name or original CSV title
         status:'backlog',
         platforms:[],
         genre,
@@ -1291,7 +1297,8 @@ document.getElementById('csvImportFile').addEventListener('change',function(){
       });
 
       if(gameData)imported++;else notFound++;
-      await new Promise(r=>setTimeout(r,350)); // rate limit pause
+      // Wait between requests to avoid rate limiting and keep order correct
+      await new Promise(r=>setTimeout(r,400));
     }
 
     games=games.concat(newGames);
