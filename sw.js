@@ -1,6 +1,6 @@
 // Neuzcores Gaming Backlog — Service Worker
 // Bump this version alongside APP_VERSION in game-backlog.html on every update
-const CACHE = 'gaming-backlog-v1.0.8';
+const CACHE = 'gaming-backlog-v1.0.9';
 const ASSETS = [
   './manifest.json',
   './icon-192.png',
