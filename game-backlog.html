@@ -139,8 +139,19 @@
   .form-group.full{grid-column:1/-1;}
   .form-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:16px;}
   .form-cover-row{display:flex;gap:14px;align-items:flex-start;margin:12px 0;}
-  .form-cover-img{width:54px;height:72px;border-radius:7px;object-fit:cover;border:1px solid var(--border);flex-shrink:0;display:none;}
+  .form-cover-img{width:54px;height:72px;border-radius:7px;object-fit:cover;border:2px solid var(--border);flex-shrink:0;display:none;cursor:pointer;transition:border-color 0.2s,transform 0.15s;}
   .form-cover-img.visible{display:block;}
+  .form-cover-img.visible:hover{border-color:var(--accent);transform:scale(1.05);}
+  .form-cover-hint{font-size:11px;color:var(--muted);margin-top:4px;display:none;}
+  .form-cover-img.visible + * .form-cover-hint{display:block;}
+
+  /* Cover picker grid */
+  .cover-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;max-height:420px;overflow-y:auto;padding:4px;}
+  .cover-option{border-radius:8px;overflow:hidden;cursor:pointer;border:2px solid transparent;transition:border-color 0.15s,transform 0.15s;aspect-ratio:3/4;background:var(--surface2);}
+  .cover-option:hover{border-color:var(--accent);transform:scale(1.03);}
+  .cover-option.selected{border-color:var(--accent);box-shadow:0 0 12px rgba(0,212,255,0.4);}
+  .cover-option img{width:100%;height:100%;object-fit:cover;display:block;}
+  .cover-loading{text-align:center;padding:40px;color:var(--muted);font-size:14px;}
 
   /* PLATFORM MULTI-PICKER */
   .plat-picker{display:flex;flex-wrap:wrap;gap:6px;padding:8px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;min-height:44px;transition:border-color 0.2s;}
@@ -312,7 +323,10 @@
       </div>
     </div>
     <div class="form-cover-row">
-      <img class="form-cover-img" id="coverPreview" src="" alt="Cover">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0;">
+        <img class="form-cover-img" id="coverPreview" src="" alt="Cover" title="Klicken um Cover zu wechseln" onclick="openCoverPicker()">
+        <span id="coverPickerHint" style="font-size:10px;color:var(--accent);display:none;cursor:pointer;letter-spacing:0.5px;" onclick="openCoverPicker()">🖼 wechseln</span>
+      </div>
       <div style="flex:1;">
         <div class="form-group">
           <label>Spieltitel *</label>
@@ -387,6 +401,18 @@
 
   <div class="game-list" id="gameList"></div>
   <div class="empty-state hidden" id="emptyState"><div class="emoji">🕹️</div><p>Keine Spiele gefunden.</p></div>
+</div>
+
+<!-- COVER PICKER MODAL -->
+<div class="modal-overlay hidden" id="coverPickerModal">
+  <div class="modal" style="max-width:560px;">
+    <button class="modal-close" onclick="document.getElementById('coverPickerModal').classList.add('hidden')">✕</button>
+    <div class="modal-title">🖼 Cover auswählen</div>
+    <div id="coverPickerContent" class="cover-loading">Lade Bilder…</div>
+    <div style="display:flex;gap:10px;margin-top:16px;">
+      <button class="btn btn-ghost" style="flex:1;" onclick="document.getElementById('coverPickerModal').classList.add('hidden')">Abbrechen</button>
+    </div>
+  </div>
 </div>
 
 <!-- RANDOM FILTER + RESULT MODAL -->
@@ -998,11 +1024,15 @@ async function doRawgSearch(q){
   });
 }
 
+let currentRawgId=null;
+
 function pickRawg(g){
+  currentRawgId=g.id;
   document.getElementById('newTitle').value=g.name;
   if(g.background_image){
     document.getElementById('newCoverUrl').value=g.background_image;
     const p=document.getElementById('coverPreview');p.src=g.background_image;p.classList.add('visible');
+    document.getElementById('coverPickerHint').style.display='block';
   }
   // Release year
   if(g.released){
@@ -1049,12 +1079,13 @@ document.getElementById('saveGame').addEventListener('click',()=>{
 function clearAddForm(){
   ['newTitle','newNotes','newRating','newPlays','newCoverUrl','rawgSearch','newReleaseYear','newDeveloper'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('newGenre').selectedIndex=0;
-  // Reset status to Backlog (default)
   setSelect('newStatus','backlog');
   if(newPlatPicker)newPlatPicker.setSelected([]);
   if(newYearPicker)newYearPicker.setSelected([]);
   const p=document.getElementById('coverPreview');p.src='';p.classList.remove('visible');
+  document.getElementById('coverPickerHint').style.display='none';
   document.getElementById('rawgResults').classList.add('hidden');
+  currentRawgId=null;
 }
 
 // ─── DELETE ───────────────────────────────────────────────────────────────
@@ -1398,6 +1429,63 @@ document.getElementById('disconnectCloud').addEventListener('click',()=>{
   document.getElementById('cloudBinId').value='';
   document.getElementById('cloudKey').value='';
 });
+
+// ─── COVER PICKER ─────────────────────────────────────────────────────────
+async function openCoverPicker(){
+  if(!currentRawgId){return;}
+  const modal=document.getElementById('coverPickerModal');
+  const content=document.getElementById('coverPickerContent');
+  modal.classList.remove('hidden');
+  content.className='cover-loading';
+  content.innerHTML='🔍 Lade Cover-Bilder…';
+
+  try{
+    // Fetch screenshots from RAWG
+    const rawgUrl=`https://api.rawg.io/api/games/${currentRawgId}/screenshots?key=${RAWG_KEY}&page_size=20`;
+    const strategies=[
+      async()=>{const r=await fetch(rawgUrl,{signal:AbortSignal.timeout(5000)});if(!r.ok)throw new Error();return r.json();},
+      async()=>{const r=await fetch(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(rawgUrl)}`,{signal:AbortSignal.timeout(7000)});if(!r.ok)throw new Error();return r.json();},
+      async()=>{const r=await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(rawgUrl)}`,{signal:AbortSignal.timeout(7000)});if(!r.ok)throw new Error();const j=await r.json();return JSON.parse(j.contents);},
+    ];
+    let data=null;
+    for(const fn of strategies){try{data=await fn();if(data)break;}catch(e){continue;}}
+
+    // Build image list: main cover first, then screenshots
+    const currentCover=document.getElementById('newCoverUrl').value;
+    const images=[];
+    if(currentCover) images.push({url:currentCover,label:'Aktuelles Cover'});
+    if(data?.results){
+      data.results.forEach(s=>{ if(s.image&&!images.find(i=>i.url===s.image)) images.push({url:s.image,label:'Screenshot'}); });
+    }
+
+    if(!images.length){
+      content.innerHTML='<p style="color:var(--muted);text-align:center;padding:20px;">Keine weiteren Bilder gefunden.</p>';
+      return;
+    }
+
+    content.className='cover-grid';
+    content.innerHTML=images.map((img,i)=>`
+      <div class="cover-option${img.url===currentCover?' selected':''}" data-url="${esc(img.url)}" onclick="selectCover('${esc(img.url)}')">
+        <img src="${esc(img.url)}" loading="lazy" alt="${esc(img.label)}" onerror="this.parentElement.style.display='none'">
+      </div>
+    `).join('');
+
+  }catch(e){
+    content.innerHTML='<p style="color:var(--red);text-align:center;padding:20px;">Fehler beim Laden der Bilder.</p>';
+  }
+}
+
+function selectCover(url){
+  document.getElementById('newCoverUrl').value=url;
+  const p=document.getElementById('coverPreview');
+  p.src=url;p.classList.add('visible');
+  // highlight selected
+  document.querySelectorAll('.cover-option').forEach(el=>{
+    el.classList.toggle('selected',el.dataset.url===url);
+  });
+  // close after short delay so user sees selection
+  setTimeout(()=>document.getElementById('coverPickerModal').classList.add('hidden'),400);
+}
 
 // ─── INIT ─────────────────────────────────────────────────────────────────
 newPlatPicker=buildPlatPicker('newPlatPicker','newPlatInput','newPlatDrop',[]);
