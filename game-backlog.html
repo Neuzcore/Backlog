@@ -1229,25 +1229,41 @@ document.addEventListener('visibilitychange',()=>{
 });
 
 // ─── PWA SERVICE WORKER ───────────────────────────────────────────────────
+// APP_VERSION: increment this number every time you upload a new version to GitHub.
+// This forces Firefox (and all browsers) to fetch the new sw.js and clear the old cache.
+const APP_VERSION = '1.0.8';
+
 if('serviceWorker' in navigator){
-  window.addEventListener('load',()=>{
-    navigator.serviceWorker.register('sw.js').then(reg=>{
-      // Check for updates every time the page loads
+  window.addEventListener('load', async ()=>{
+    try {
+      // Register with version in URL so browsers always detect a change
+      const reg = await navigator.serviceWorker.register(`sw.js?v=${APP_VERSION}`);
+
+      // Force immediate update check
       reg.update();
-      // When a new SW is waiting, activate it immediately
-      reg.addEventListener('updatefound',()=>{
-        const newWorker=reg.installing;
-        newWorker.addEventListener('statechange',()=>{
-          if(newWorker.state==='installed'&&navigator.serviceWorker.controller){
-            // New version available — reload automatically
-            navigator.serviceWorker.addEventListener('controllerchange',()=>{
-              window.location.reload();
-            });
-            newWorker.postMessage({type:'SKIP_WAITING'});
+
+      reg.addEventListener('updatefound', ()=>{
+        const newWorker = reg.installing;
+        newWorker.addEventListener('statechange', ()=>{
+          if(newWorker.state === 'installed'){
+            if(navigator.serviceWorker.controller){
+              // New version ready — skip waiting and reload
+              newWorker.postMessage({type:'SKIP_WAITING'});
+            }
+          }
+          if(newWorker.state === 'activated'){
+            window.location.reload();
           }
         });
       });
-    }).catch(()=>{});
+
+      // Also reload when controller changes (catches Firefox edge cases)
+      let refreshing = false;
+      navigator.serviceWorker.addEventListener('controllerchange', ()=>{
+        if(!refreshing){ refreshing=true; window.location.reload(); }
+      });
+
+    } catch(e){}
   });
 }
 </script>
