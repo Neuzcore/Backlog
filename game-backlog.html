@@ -258,8 +258,11 @@
       <option value="">Alle Genres</option>
       <option>Action</option><option>RPG</option><option>Adventure</option><option>Strategie</option><option>Shooter</option><option>Platformer</option><option>Horror</option><option>Simulation</option><option>Sport</option><option>Puzzle</option><option>Sonstige</option>
     </select>
-    <select id="yearFilter" style="min-width:130px;">
-      <option value="">Alle Jahre</option>
+    <select id="releaseYearFilter" style="min-width:150px;">
+      <option value="">Alle Erscheinungsjahre</option>
+    </select>
+    <select id="yearFilter" style="min-width:150px;">
+      <option value="">Alle Durchspiel-Jahre</option>
     </select>
     <select id="sortSelect" style="min-width:130px;">
       <option value="default">↕ Reihenfolge</option>
@@ -323,8 +326,16 @@
         <input type="number" id="newRating" min="0" max="10" step="0.5" placeholder="z.B. 8.5">
       </div>
       <div class="form-group">
+        <label>Erscheinungsjahr</label>
+        <input type="number" id="newReleaseYear" min="1970" max="2099" placeholder="z.B. 2022">
+      </div>
+      <div class="form-group">
         <label>Durchspieldurchläufe</label>
         <input type="number" id="newPlays" min="0" step="1" placeholder="0">
+      </div>
+      <div class="form-group">
+        <label>Entwickler</label>
+        <input type="text" id="newDeveloper" placeholder="z.B. CD Projekt Red">
       </div>
       <div class="form-group full">
         <label>Durchgespielt in (Jahr, Mehrfachauswahl möglich)</label>
@@ -436,8 +447,16 @@
         <input type="number" id="editRating" min="0" max="10" step="0.5" placeholder="z.B. 8.5">
       </div>
       <div class="form-group">
+        <label>Erscheinungsjahr</label>
+        <input type="number" id="editReleaseYear" min="1970" max="2099" placeholder="z.B. 2022">
+      </div>
+      <div class="form-group">
         <label>Durchspieldurchläufe</label>
         <input type="number" id="editPlays" min="0" step="1" placeholder="0">
+      </div>
+      <div class="form-group">
+        <label>Entwickler</label>
+        <input type="text" id="editDeveloper" placeholder="z.B. CD Projekt Red">
       </div>
       <div class="form-group full">
         <label>Durchgespielt in (Jahr, Mehrfachauswahl möglich)</label>
@@ -623,7 +642,7 @@ function setCloudStatus(s){
 
 let games=loadLocal();
 let nextId=games.length?Math.max(...games.map(g=>g.id))+1:1;
-let activeTab='all',searchQuery='',platformFilter='',genreFilter='',yearFilter='',sortOrder='default';
+let activeTab='all',searchQuery='',platformFilter='',genreFilter='',yearFilter='',releaseYearFilter='',sortOrder='default';
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
@@ -777,7 +796,8 @@ function getFiltered(){
       &&(!searchQuery||g.title.toLowerCase().includes(searchQuery.toLowerCase()))
       &&(!platformFilter||plats.includes(platformFilter))
       &&(!genreFilter||g.genre===genreFilter)
-      &&(!yearFilter||years.includes(yearFilter));
+      &&(!yearFilter||years.includes(yearFilter))
+      &&(!releaseYearFilter||String(g.releaseYear||'')=== releaseYearFilter);
   });
   if(sortOrder==='az') result=[...result].sort((a,b)=>a.title.localeCompare(b.title,'de'));
   if(sortOrder==='za') result=[...result].sort((a,b)=>b.title.localeCompare(a.title,'de'));
@@ -785,11 +805,19 @@ function getFiltered(){
 }
 
 function updateYearFilter(){
+  // Durchgespielt-Jahre
   const sel=document.getElementById('yearFilter');
-  const current=sel.value;
+  const cur=sel.value;
   const years=[...new Set(games.flatMap(g=>Array.isArray(g.beatenYears)?g.beatenYears:[]))].sort((a,b)=>b-a);
-  sel.innerHTML='<option value="">Alle Jahre</option>'+years.map(y=>`<option value="${y}">${y}</option>`).join('');
-  if(years.includes(current)) sel.value=current;
+  sel.innerHTML='<option value="">Alle Durchspiel-Jahre</option>'+years.map(y=>`<option value="${y}">${y}</option>`).join('');
+  if(years.includes(cur)) sel.value=cur;
+
+  // Erscheinungsjahre
+  const rsel=document.getElementById('releaseYearFilter');
+  const rcur=rsel.value;
+  const ryears=[...new Set(games.map(g=>g.releaseYear).filter(Boolean))].sort((a,b)=>b-a);
+  rsel.innerHTML='<option value="">Alle Erscheinungsjahre</option>'+ryears.map(y=>`<option value="${y}">${y}</option>`).join('');
+  if(ryears.includes(parseInt(rcur))) rsel.value=rcur;
 }
 
 function updateStats(){
@@ -820,9 +848,11 @@ function render(){
         <div class="game-meta">
           ${plats.map(p=>`<span class="tag tag-platform">${esc(p)}</span>`).join('')}
           ${g.genre?`<span class="tag tag-genre">${esc(g.genre)}</span>`:''}
+          ${g.releaseYear?`<span class="tag tag-year">🗓 ${esc(String(g.releaseYear))}</span>`:''}
           ${renderScore(g.rating)}${renderPlays(g.plays)}
           ${years.map(y=>`<span class="tag tag-year">📅 ${esc(String(y))}</span>`).join('')}
         </div>
+        ${g.developer?`<div class="game-notes">👾 ${esc(g.developer)}</div>`:''}
         ${g.notes?`<div class="game-notes">${esc(g.notes)}</div>`:''}
       </div>
       <span class="status-badge status-${g.status}">${STATUS_LABELS[g.status]||g.status}</span>
@@ -850,7 +880,7 @@ let rawgResultCache=[];
 
 async function doRawgSearch(q){
   const box=document.getElementById('rawgResults');
-  const rawgUrl=`https://api.rawg.io/api/games?key=${RAWG_KEY}&search=${encodeURIComponent(q)}&page_size=8&search_precise=false`;
+  const rawgUrl=`https://api.rawg.io/api/games?key=${RAWG_KEY}&search=${encodeURIComponent(q)}&page_size=8&search_precise=false&fields=name,background_image,released,platforms,genres,developers`;
   const strategies=[
     async()=>{const r=await fetch(rawgUrl,{signal:AbortSignal.timeout(5000)});if(!r.ok)throw new Error();return r.json();},
     async()=>{const r=await fetch(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(rawgUrl)}`,{signal:AbortSignal.timeout(7000)});if(!r.ok)throw new Error();return r.json();},
@@ -883,6 +913,15 @@ function pickRawg(g){
     document.getElementById('newCoverUrl').value=g.background_image;
     const p=document.getElementById('coverPreview');p.src=g.background_image;p.classList.add('visible');
   }
+  // Release year
+  if(g.released){
+    const yr=g.released.split('-')[0];
+    document.getElementById('newReleaseYear').value=yr;
+  }
+  // Developer (first one from developers array if present)
+  if(g.developers&&g.developers.length){
+    document.getElementById('newDeveloper').value=g.developers[0].name;
+  }
   // Only auto-fill platforms if user hasn't selected any yet
   if(g.platforms&&newPlatPicker&&newPlatPicker.getSelected().length===0){
     const mapped=[];
@@ -903,11 +942,14 @@ document.getElementById('saveGame').addEventListener('click',()=>{
   const title=document.getElementById('newTitle').value.trim();
   if(!title){document.getElementById('newTitle').focus();return;}
   const rv=document.getElementById('newRating').value,pv=document.getElementById('newPlays').value;
+  const ryv=document.getElementById('newReleaseYear').value;
   games.push({
     id:nextId++,title,
     status:document.getElementById('newStatus').value,
     platforms:newPlatPicker?newPlatPicker.getSelected():[],
     genre:document.getElementById('newGenre').value,
+    releaseYear:ryv!==''?parseInt(ryv):null,
+    developer:document.getElementById('newDeveloper').value.trim()||'',
     rating:rv!==''?parseFloat(rv):null,
     plays:pv!==''?parseInt(pv):0,
     beatenYears:newYearPicker?newYearPicker.getSelected():[],
@@ -918,7 +960,7 @@ document.getElementById('saveGame').addEventListener('click',()=>{
 });
 
 function clearAddForm(){
-  ['newTitle','newNotes','newRating','newPlays','newCoverUrl','rawgSearch'].forEach(id=>document.getElementById(id).value='');
+  ['newTitle','newNotes','newRating','newPlays','newCoverUrl','rawgSearch','newReleaseYear','newDeveloper'].forEach(id=>document.getElementById(id).value='');
   ['newStatus','newGenre'].forEach(id=>document.getElementById(id).selectedIndex=0);
   if(newPlatPicker)newPlatPicker.setSelected([]);
   if(newYearPicker)newYearPicker.setSelected([]);
@@ -937,6 +979,8 @@ function openEdit(id){
   document.getElementById('editNotes').value=g.notes||'';
   document.getElementById('editRating').value=(g.rating!==null&&g.rating!==undefined)?g.rating:'';
   document.getElementById('editPlays').value=g.plays||0;
+  document.getElementById('editReleaseYear').value=g.releaseYear||'';
+  document.getElementById('editDeveloper').value=g.developer||'';
   document.getElementById('editCoverUrl').value=g.coverUrl||'';
   const img=document.getElementById('editCoverImg');
   if(g.coverUrl){img.src=g.coverUrl;img.style.display='block';}else{img.style.display='none';}
@@ -958,6 +1002,9 @@ document.getElementById('saveEdit').addEventListener('click',()=>{
   const er=document.getElementById('editRating').value;
   g.rating=er!==''?parseFloat(er):null;
   g.plays=parseInt(document.getElementById('editPlays').value)||0;
+  const ery=document.getElementById('editReleaseYear').value;
+  g.releaseYear=ery!==''?parseInt(ery):null;
+  g.developer=document.getElementById('editDeveloper').value.trim()||'';
   g.beatenYears=editYearPicker?editYearPicker.getSelected():[];
   g.notes=document.getElementById('editNotes').value.trim();
   save(games);document.getElementById('editModal').classList.add('hidden');render();
@@ -1059,6 +1106,7 @@ document.querySelectorAll('.tab').forEach(tab=>{
 document.getElementById('searchInput').addEventListener('input',e=>{searchQuery=e.target.value;render();});
 document.getElementById('platformFilter').addEventListener('change',e=>{platformFilter=e.target.value;render();});
 document.getElementById('genreFilter').addEventListener('change',e=>{genreFilter=e.target.value;render();});
+document.getElementById('releaseYearFilter').addEventListener('change',e=>{releaseYearFilter=e.target.value;render();});
 document.getElementById('yearFilter').addEventListener('change',e=>{yearFilter=e.target.value;render();});
 document.getElementById('sortSelect').addEventListener('change',e=>{sortOrder=e.target.value;render();});
 
