@@ -1,5 +1,5 @@
 // Neuzcores Gaming Backlog — Service Worker
-const CACHE = 'gaming-backlog-v1';
+const CACHE = 'gaming-backlog-v2';
 const ASSETS = [
   './game-backlog.html',
   './manifest.json',
@@ -22,6 +22,11 @@ self.addEventListener('activate', e => {
       Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
     ).then(() => self.clients.claim())
   );
+});
+
+// Skip waiting when told to update immediately
+self.addEventListener('message', e => {
+  if (e.data && e.data.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
 // Fetch strategy:
