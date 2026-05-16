@@ -83,8 +83,8 @@
   .game-tile-cover-ph{width:100%;flex:1;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:36px;min-height:0;}
 
   /* Title bar at bottom */
-  .game-tile-footer{padding:7px 8px 6px;background:linear-gradient(0deg,rgba(8,11,20,0.98) 0%,rgba(8,11,20,0.85) 100%);flex-shrink:0;}
-  .game-tile-title{font-size:12px;font-weight:700;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;color:var(--text);}
+  .game-tile-footer{padding:8px 10px 7px;background:linear-gradient(0deg,rgba(8,11,20,0.98) 0%,rgba(8,11,20,0.85) 100%);flex-shrink:0;}
+  .game-tile-title{font-size:14px;font-weight:700;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;color:var(--text);}
 
   /* Status dot in top-right corner */
   .game-tile-status{position:absolute;top:7px;right:7px;width:11px;height:11px;border-radius:50%;border:2px solid rgba(8,11,20,0.7);flex-shrink:0;}
@@ -326,7 +326,7 @@
           <option value="playing">Spiele ich aktuell</option>
           <option value="owned">Gekauft</option>
           <option value="beaten">Durchgespielt</option>
-          <option value="backlog">Backlog</option>
+          <option value="backlog" selected>Backlog</option>
           <option value="wishlist">Wunschliste</option>
           <option value="dropped">Abgebrochen</option>
         </select>
@@ -1007,17 +1007,13 @@ function pickRawg(g){
     const yr=g.released.split('-')[0];
     document.getElementById('newReleaseYear').value=yr;
   }
-  // Developer (first one from developers array if present)
+  // Developer
   if(g.developers&&g.developers.length){
     document.getElementById('newDeveloper').value=g.developers[0].name;
   }
-  // Only auto-fill platforms if user hasn't selected any yet
-  if(g.platforms&&newPlatPicker&&newPlatPicker.getSelected().length===0){
-    const mapped=[];
-    for(const p of g.platforms){const m=PLATFORM_MAP[p.platform.name];if(m&&!mapped.includes(m))mapped.push(m);}
-    if(mapped.length)newPlatPicker.setSelected(mapped.slice(0,3));
-  }
+  // Genre
   if(g.genres){for(const gen of g.genres){const m=GENRE_MAP[gen.slug];if(m){setSelect('newGenre',m);break;}}}
+  // Platforms intentionally left empty — user fills manually
   document.getElementById('rawgResults').classList.add('hidden');
   document.getElementById('rawgSearch').value='';
 }
@@ -1050,7 +1046,9 @@ document.getElementById('saveGame').addEventListener('click',()=>{
 
 function clearAddForm(){
   ['newTitle','newNotes','newRating','newPlays','newCoverUrl','rawgSearch','newReleaseYear','newDeveloper'].forEach(id=>document.getElementById(id).value='');
-  ['newStatus','newGenre'].forEach(id=>document.getElementById(id).selectedIndex=0);
+  document.getElementById('newGenre').selectedIndex=0;
+  // Reset status to Backlog (default)
+  setSelect('newStatus','backlog');
   if(newPlatPicker)newPlatPicker.setSelected([]);
   if(newYearPicker)newYearPicker.setSelected([]);
   const p=document.getElementById('coverPreview');p.src='';p.classList.remove('visible');
