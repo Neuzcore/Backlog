@@ -82,6 +82,7 @@
   .tag-genre{background:rgba(124,58,237,0.1);color:#a78bfa;border:1px solid rgba(124,58,237,0.2);}
   .tag-rating{background:rgba(245,158,11,0.1);color:var(--accent3);border:1px solid rgba(245,158,11,0.2);}
   .tag-plays{background:rgba(16,185,129,0.1);color:var(--green);border:1px solid rgba(16,185,129,0.2);}
+  .tag-year{background:rgba(100,116,139,0.15);color:#94a3b8;border:1px solid rgba(100,116,139,0.3);}
   .score-display{display:inline-flex;align-items:center;gap:5px;}
   .score-bar{width:48px;height:4px;background:var(--border);border-radius:3px;overflow:hidden;}
   .score-fill{height:100%;border-radius:3px;}
@@ -224,17 +225,16 @@
 
   <div class="stats-bar">
     <div class="stat-chip all"><span class="num" id="statAll">0</span> Gesamt</div>
-    <div class="stat-chip" style="--c:#34d399"><span class="num" id="statPlaying" style="color:#34d399">0</span> Aktuell</div>
+    <div class="stat-chip"><span class="num" id="statPlaying" style="color:#34d399">0</span> Aktuell</div>
     <div class="stat-chip beaten"><span class="num" id="statBeaten">0</span> Durchgespielt</div>
     <div class="stat-chip backlog"><span class="num" id="statBacklog">0</span> Backlog</div>
     <div class="stat-chip wishlist"><span class="num" id="statWishlist">0</span> Wunschliste</div>
-    <div class="stat-chip" ><span class="num" id="statDropped" style="color:#f87171">0</span> Abgebrochen</div>
+    <div class="stat-chip"><span class="num" id="statDropped" style="color:#f87171">0</span> Abgebrochen</div>
   </div>
 
   <div class="tabs">
     <button class="tab active" data-tab="all">Alle</button>
     <button class="tab" data-tab="playing">Aktuell</button>
-    <button class="tab" data-tab="owned">Besitze ich</button>
     <button class="tab" data-tab="beaten">Durchgespielt</button>
     <button class="tab" data-tab="backlog">Backlog</button>
     <button class="tab" data-tab="wishlist">Wunschliste</button>
@@ -257,6 +257,14 @@
     <select id="genreFilter">
       <option value="">Alle Genres</option>
       <option>Action</option><option>RPG</option><option>Adventure</option><option>Strategie</option><option>Shooter</option><option>Platformer</option><option>Horror</option><option>Simulation</option><option>Sport</option><option>Puzzle</option><option>Sonstige</option>
+    </select>
+    <select id="yearFilter" style="min-width:130px;">
+      <option value="">Alle Jahre</option>
+    </select>
+    <select id="sortSelect" style="min-width:130px;">
+      <option value="default">↕ Reihenfolge</option>
+      <option value="az">A → Z</option>
+      <option value="za">Z → A</option>
     </select>
     <button class="btn btn-gold" id="randomBtn">🎲 Zufallsspiel</button>
     <button class="btn btn-primary" id="addBtn">＋ Spiel hinzufügen</button>
@@ -287,7 +295,7 @@
         <label>Status *</label>
         <select id="newStatus">
           <option value="playing">Spiele ich aktuell</option>
-          <option value="owned">Besitze ich</option>
+          <option value="owned">Gekauft</option>
           <option value="beaten">Durchgespielt</option>
           <option value="backlog">Backlog</option>
           <option value="wishlist">Wunschliste</option>
@@ -318,9 +326,14 @@
         <label>Durchspieldurchläufe</label>
         <input type="number" id="newPlays" min="0" step="1" placeholder="0">
       </div>
-      <div class="form-group">
-        <label>Emoji / Icon</label>
-        <input type="text" id="newEmoji" placeholder="🎮" maxlength="4">
+      <div class="form-group full">
+        <label>Durchgespielt in (Jahr, Mehrfachauswahl möglich)</label>
+        <div class="plat-picker" id="newYearPicker">
+          <div class="plat-add-wrap">
+            <input class="plat-input" id="newYearInput" placeholder="Jahr eingeben, z.B. 2024…" autocomplete="off" type="number" min="1970" max="2099">
+            <div class="plat-dropdown hidden" id="newYearDrop"></div>
+          </div>
+        </div>
       </div>
       <div class="form-group full">
         <label>Notizen</label>
@@ -349,7 +362,6 @@
         <div class="filter-label">Status filtern</div>
         <div class="chip-group" id="statusChips">
           <button class="chip active status-playing-chip" data-val="playing">Aktuell</button>
-          <button class="chip active status-owned-chip" data-val="owned">Besitze ich</button>
           <button class="chip active status-beaten-chip" data-val="beaten">Durchgespielt</button>
           <button class="chip active status-backlog-chip" data-val="backlog">Backlog</button>
           <button class="chip active status-wishlist-chip" data-val="wishlist">Wunschliste</button>
@@ -396,7 +408,7 @@
         <label>Status</label>
         <select id="editStatus">
           <option value="playing">Spiele ich aktuell</option>
-          <option value="owned">Besitze ich</option>
+          <option value="owned">Gekauft</option>
           <option value="beaten">Durchgespielt</option>
           <option value="backlog">Backlog</option>
           <option value="wishlist">Wunschliste</option>
@@ -427,9 +439,14 @@
         <label>Durchspieldurchläufe</label>
         <input type="number" id="editPlays" min="0" step="1" placeholder="0">
       </div>
-      <div class="form-group">
-        <label>Emoji / Icon</label>
-        <input type="text" id="editEmoji" maxlength="4">
+      <div class="form-group full">
+        <label>Durchgespielt in (Jahr, Mehrfachauswahl möglich)</label>
+        <div class="plat-picker" id="editYearPicker">
+          <div class="plat-add-wrap">
+            <input class="plat-input" id="editYearInput" placeholder="Jahr eingeben, z.B. 2024…" autocomplete="off" type="number" min="1970" max="2099">
+            <div class="plat-dropdown hidden" id="editYearDrop"></div>
+          </div>
+        </div>
       </div>
       <div class="form-group full">
         <label>Notizen</label>
@@ -494,7 +511,7 @@ const ALL_PLATFORMS=[
 ];
 const ALL_PLATFORM_NAMES=ALL_PLATFORMS.flatMap(g=>g.items);
 
-const STATUS_LABELS={owned:'Besitze ich',playing:'Spiele ich aktuell',beaten:'Durchgespielt',backlog:'Backlog',wishlist:'Wunschliste',dropped:'Abgebrochen'};
+const STATUS_LABELS={playing:'Aktuell',beaten:'Durchgespielt',backlog:'Backlog',wishlist:'Wunschliste',dropped:'Abgebrochen'};
 
 const PLATFORM_MAP={
   'PC':'PC','macOS':'Mac','iOS':'Mobile','Android':'Mobile',
@@ -606,7 +623,7 @@ function setCloudStatus(s){
 
 let games=loadLocal();
 let nextId=games.length?Math.max(...games.map(g=>g.id))+1:1;
-let activeTab='all',searchQuery='',platformFilter='',genreFilter='';
+let activeTab='all',searchQuery='',platformFilter='',genreFilter='',yearFilter='',sortOrder='default';
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
@@ -682,17 +699,97 @@ function buildPlatPicker(pickerId, inputId, dropId, initial=[]) {
   };
 }
 
-let newPlatPicker, editPlatPicker;
+let newPlatPicker, editPlatPicker, newYearPicker, editYearPicker;
+
+// ─── YEAR MULTI-PICKER ────────────────────────────────────────────────────
+function buildYearPicker(pickerId, inputId, dropId, initial=[]) {
+  const picker=document.getElementById(pickerId);
+  const input=document.getElementById(inputId);
+  const drop=document.getElementById(dropId);
+  let selected=[...initial].map(String);
+
+  function refresh(){
+    picker.querySelectorAll('.plat-pill').forEach(p=>p.remove());
+    const wrap=picker.querySelector('.plat-add-wrap');
+    selected.forEach(y=>{
+      const pill=document.createElement('span');
+      pill.className='plat-pill';
+      const label=document.createTextNode(y);
+      const btn=document.createElement('button');
+      btn.textContent='×';
+      btn.addEventListener('click',()=>{selected=selected.filter(s=>s!==y);refresh();});
+      pill.appendChild(label);pill.appendChild(btn);
+      picker.insertBefore(pill,wrap);
+    });
+    input.placeholder=selected.length?'':'Jahr eingeben, z.B. 2024…';
+  }
+
+  function showSuggestions(){
+    const val=input.value.trim();
+    const cur=new Date().getFullYear();
+    // show last 10 years as quick suggestions, filtered by input
+    const suggestions=[];
+    for(let y=cur;y>=1980;y--){
+      if(!selected.includes(String(y))&&(val===''||String(y).startsWith(val))) suggestions.push(y);
+      if(suggestions.length>=8) break;
+    }
+    if(!suggestions.length){drop.classList.add('hidden');return;}
+    drop.innerHTML=suggestions.map(y=>`<div class="plat-opt" data-val="${y}">${y}</div>`).join('');
+    drop.classList.remove('hidden');
+    drop.querySelectorAll('.plat-opt').forEach(el=>{
+      el.addEventListener('mousedown',e=>{
+        e.preventDefault();
+        const v=el.dataset.val;
+        if(!selected.includes(v)){selected.push(v);selected.sort((a,b)=>b-a);refresh();}
+        drop.classList.add('hidden');input.value='';
+      });
+    });
+  }
+
+  input.addEventListener('focus',showSuggestions);
+  input.addEventListener('input',showSuggestions);
+  input.addEventListener('keydown',e=>{
+    if(e.key==='Enter'){
+      e.preventDefault();
+      const v=input.value.trim();
+      const n=parseInt(v);
+      if(v&&n>=1970&&n<=2099&&!selected.includes(v)){
+        selected.push(v);selected.sort((a,b)=>b-a);refresh();
+      }
+      drop.classList.add('hidden');input.value='';
+    }
+  });
+  input.addEventListener('blur',()=>setTimeout(()=>drop.classList.add('hidden'),150));
+
+  refresh();
+  return {
+    getSelected:()=>selected,
+    setSelected:(arr)=>{selected=[...arr].map(String).sort((a,b)=>b-a);refresh();}
+  };
+}
 
 // ─── RENDER ───────────────────────────────────────────────────────────────
 function getFiltered(){
-  return games.filter(g=>{
+  let result=games.filter(g=>{
     const plats=getPlatforms(g);
+    const years=Array.isArray(g.beatenYears)?g.beatenYears:[];
     return(activeTab==='all'||g.status===activeTab)
       &&(!searchQuery||g.title.toLowerCase().includes(searchQuery.toLowerCase()))
       &&(!platformFilter||plats.includes(platformFilter))
-      &&(!genreFilter||g.genre===genreFilter);
+      &&(!genreFilter||g.genre===genreFilter)
+      &&(!yearFilter||years.includes(yearFilter));
   });
+  if(sortOrder==='az') result=[...result].sort((a,b)=>a.title.localeCompare(b.title,'de'));
+  if(sortOrder==='za') result=[...result].sort((a,b)=>b.title.localeCompare(a.title,'de'));
+  return result;
+}
+
+function updateYearFilter(){
+  const sel=document.getElementById('yearFilter');
+  const current=sel.value;
+  const years=[...new Set(games.flatMap(g=>Array.isArray(g.beatenYears)?g.beatenYears:[]))].sort((a,b)=>b-a);
+  sel.innerHTML='<option value="">Alle Jahre</option>'+years.map(y=>`<option value="${y}">${y}</option>`).join('');
+  if(years.includes(current)) sel.value=current;
 }
 
 function updateStats(){
@@ -702,6 +799,7 @@ function updateStats(){
   document.getElementById('statBacklog').textContent=games.filter(g=>g.status==='backlog').length;
   document.getElementById('statWishlist').textContent=games.filter(g=>g.status==='wishlist').length;
   document.getElementById('statDropped').textContent=games.filter(g=>g.status==='dropped').length;
+  updateYearFilter();
 }
 
 function render(){
@@ -712,20 +810,22 @@ function render(){
   empty.classList.add('hidden');
   list.innerHTML=filtered.map(g=>{
     const plats=getPlatforms(g);
+    const years=Array.isArray(g.beatenYears)?g.beatenYears:[];
     const coverHtml=g.coverUrl?`<img class="game-cover" src="${esc(g.coverUrl)}" loading="lazy" onerror="this.style.display='none';this.nextSibling.style.display='flex'">`:  '';
     const phStyle=g.coverUrl?'style="display:none"':'';
     return`<div class="game-card" data-id="${g.id}">
-      ${coverHtml}<div class="game-cover-ph" ${phStyle}>${g.emoji||'🎮'}</div>
+      ${coverHtml}<div class="game-cover-ph" ${phStyle}>🎮</div>
       <div class="game-info">
         <div class="game-title">${esc(g.title)}</div>
         <div class="game-meta">
           ${plats.map(p=>`<span class="tag tag-platform">${esc(p)}</span>`).join('')}
           ${g.genre?`<span class="tag tag-genre">${esc(g.genre)}</span>`:''}
           ${renderScore(g.rating)}${renderPlays(g.plays)}
+          ${years.map(y=>`<span class="tag tag-year">📅 ${esc(String(y))}</span>`).join('')}
         </div>
         ${g.notes?`<div class="game-notes">${esc(g.notes)}</div>`:''}
       </div>
-      <span class="status-badge status-${g.status}">${STATUS_LABELS[g.status]}</span>
+      <span class="status-badge status-${g.status}">${STATUS_LABELS[g.status]||g.status}</span>
       <div class="game-actions">
         <button class="icon-btn" onclick="openEdit(${g.id})">✏️</button>
         <button class="icon-btn danger" onclick="deleteGame(${g.id})">🗑</button>
@@ -810,7 +910,7 @@ document.getElementById('saveGame').addEventListener('click',()=>{
     genre:document.getElementById('newGenre').value,
     rating:rv!==''?parseFloat(rv):null,
     plays:pv!==''?parseInt(pv):0,
-    emoji:document.getElementById('newEmoji').value.trim()||'🎮',
+    beatenYears:newYearPicker?newYearPicker.getSelected():[],
     notes:document.getElementById('newNotes').value.trim(),
     coverUrl:document.getElementById('newCoverUrl').value||'',
   });
@@ -818,9 +918,10 @@ document.getElementById('saveGame').addEventListener('click',()=>{
 });
 
 function clearAddForm(){
-  ['newTitle','newEmoji','newNotes','newRating','newPlays','newCoverUrl','rawgSearch'].forEach(id=>document.getElementById(id).value='');
+  ['newTitle','newNotes','newRating','newPlays','newCoverUrl','rawgSearch'].forEach(id=>document.getElementById(id).value='');
   ['newStatus','newGenre'].forEach(id=>document.getElementById(id).selectedIndex=0);
   if(newPlatPicker)newPlatPicker.setSelected([]);
+  if(newYearPicker)newYearPicker.setSelected([]);
   const p=document.getElementById('coverPreview');p.src='';p.classList.remove('visible');
   document.getElementById('rawgResults').classList.add('hidden');
 }
@@ -833,7 +934,6 @@ function openEdit(id){
   const g=games.find(g=>g.id===id);if(!g)return;
   document.getElementById('editId').value=id;
   document.getElementById('editTitle').value=g.title;
-  document.getElementById('editEmoji').value=g.emoji||'';
   document.getElementById('editNotes').value=g.notes||'';
   document.getElementById('editRating').value=(g.rating!==null&&g.rating!==undefined)?g.rating:'';
   document.getElementById('editPlays').value=g.plays||0;
@@ -842,6 +942,7 @@ function openEdit(id){
   if(g.coverUrl){img.src=g.coverUrl;img.style.display='block';}else{img.style.display='none';}
   setSelect('editStatus',g.status);setSelect('editGenre',g.genre);
   if(editPlatPicker)editPlatPicker.setSelected(getPlatforms(g));
+  if(editYearPicker)editYearPicker.setSelected(Array.isArray(g.beatenYears)?g.beatenYears:[]);
   document.getElementById('editModal').classList.remove('hidden');
 }
 
@@ -857,7 +958,7 @@ document.getElementById('saveEdit').addEventListener('click',()=>{
   const er=document.getElementById('editRating').value;
   g.rating=er!==''?parseFloat(er):null;
   g.plays=parseInt(document.getElementById('editPlays').value)||0;
-  g.emoji=document.getElementById('editEmoji').value.trim()||'🎮';
+  g.beatenYears=editYearPicker?editYearPicker.getSelected():[];
   g.notes=document.getElementById('editNotes').value.trim();
   save(games);document.getElementById('editModal').classList.add('hidden');render();
 });
@@ -958,6 +1059,8 @@ document.querySelectorAll('.tab').forEach(tab=>{
 document.getElementById('searchInput').addEventListener('input',e=>{searchQuery=e.target.value;render();});
 document.getElementById('platformFilter').addEventListener('change',e=>{platformFilter=e.target.value;render();});
 document.getElementById('genreFilter').addEventListener('change',e=>{genreFilter=e.target.value;render();});
+document.getElementById('yearFilter').addEventListener('change',e=>{yearFilter=e.target.value;render();});
+document.getElementById('sortSelect').addEventListener('change',e=>{sortOrder=e.target.value;render();});
 
 // ─── EXPORT / IMPORT ──────────────────────────────────────────────────────
 document.getElementById('exportBtn').addEventListener('click',()=>{
@@ -1041,6 +1144,8 @@ document.getElementById('disconnectCloud').addEventListener('click',()=>{
 // ─── INIT ─────────────────────────────────────────────────────────────────
 newPlatPicker=buildPlatPicker('newPlatPicker','newPlatInput','newPlatDrop',[]);
 editPlatPicker=buildPlatPicker('editPlatPicker','editPlatInput','editPlatDrop',[]);
+newYearPicker=buildYearPicker('newYearPicker','newYearInput','newYearDrop',[]);
+editYearPicker=buildYearPicker('editYearPicker','editYearInput','editYearDrop',[]);
 render(); // show local data immediately
 
 loadCloudCreds(); // try to restore saved credentials
