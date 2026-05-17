@@ -50,13 +50,20 @@
   .tabs::-webkit-scrollbar{display:none;}
   .tab{padding:8px 20px;border-radius:7px;border:none;background:transparent;color:var(--muted);font-family:'Rajdhani',sans-serif;font-size:15px;font-weight:600;cursor:pointer;transition:all 0.2s;letter-spacing:0.5px;}
   .tab:hover{color:var(--text);}
+  /* active tab uses its status colour */
   .tab.active{background:var(--accent);color:var(--bg);box-shadow:0 0 12px rgba(0,212,255,0.4);}
+  .tab.active[data-tab="playing"]{background:#fb923c;color:var(--bg);box-shadow:0 0 12px rgba(251,146,60,0.45);}
+  .tab.active[data-tab="owned"]{background:var(--accent);color:var(--bg);box-shadow:0 0 12px rgba(0,212,255,0.4);}
+  .tab.active[data-tab="beaten"]{background:var(--green);color:var(--bg);box-shadow:0 0 12px rgba(16,185,129,0.45);}
+  .tab.active[data-tab="backlog"]{background:#a78bfa;color:var(--bg);box-shadow:0 0 12px rgba(167,139,250,0.45);}
+  .tab.active[data-tab="wishlist"]{background:#94a3b8;color:var(--bg);box-shadow:0 0 12px rgba(148,163,184,0.45);}
+  .tab.active[data-tab="dropped"]{background:var(--red);color:var(--bg);box-shadow:0 0 12px rgba(239,68,68,0.45);}
 
   /* TOOLBAR — kept for legacy, filter-bar replaces it */
   .toolbar{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap;align-items:center;}
   .search-wrap{position:relative;}
   .search-wrap::before{content:'⌕';position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:18px;pointer-events:none;z-index:1;}
-  .search-wrap input{padding-left:38px;width:100%;}
+  .search-wrap input{padding-left:46px;width:100%;}
   input[type="text"],input[type="number"],select{background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:10px 14px;font-family:'Rajdhani',sans-serif;font-size:15px;width:100%;outline:none;transition:border-color 0.2s,box-shadow 0.2s;}
   input[type="text"]:focus,input[type="number"]:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,212,255,0.1);}
   select{cursor:pointer;min-width:140px;}
@@ -115,10 +122,11 @@
   .status-backlog{background:rgba(124,58,237,0.12);color:#a78bfa;border:1px solid rgba(124,58,237,0.3);}
   .status-wishlist{background:rgba(100,116,139,0.15);color:#94a3b8;border:1px solid rgba(100,116,139,0.3);}
   .status-dropped{background:rgba(239,68,68,0.12);color:#f87171;border:1px solid rgba(239,68,68,0.3);}
-  .chip.active.status-playing-chip{background:#fb923c;border-color:#fb923c;color:var(--bg);box-shadow:0 0 10px rgba(249,115,22,0.3);}
-  .chip.active.status-backlog-chip{background:#7c3aed;border-color:#7c3aed;color:#fff;box-shadow:0 0 10px rgba(124,58,237,0.3);}
-  .chip.active.status-wishlist-chip{background:#64748b;border-color:#64748b;color:#fff;box-shadow:0 0 10px rgba(100,116,139,0.3);}
-  .chip.active.status-dropped-chip{background:var(--red);border-color:var(--red);box-shadow:0 0 10px rgba(239,68,68,0.3);}
+  .chip.active.status-playing-chip{background:#fb923c;border-color:#fb923c;color:var(--bg);box-shadow:0 0 10px rgba(251,146,60,0.4);}
+  .chip.active.status-beaten-chip{background:var(--green);border-color:var(--green);color:var(--bg);box-shadow:0 0 10px rgba(16,185,129,0.4);}
+  .chip.active.status-backlog-chip{background:#a78bfa;border-color:#a78bfa;color:var(--bg);box-shadow:0 0 10px rgba(167,139,250,0.4);}
+  .chip.active.status-wishlist-chip{background:#94a3b8;border-color:#94a3b8;color:var(--bg);box-shadow:0 0 10px rgba(148,163,184,0.4);}
+  .chip.active.status-dropped-chip{background:var(--red);border-color:var(--red);color:var(--bg);box-shadow:0 0 10px rgba(239,68,68,0.4);}
   .icon-btn{width:32px;height:32px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;transition:all 0.15s;}
   .icon-btn:hover{color:var(--text);border-color:var(--accent);}
   .icon-btn.danger:hover{color:var(--red);border-color:var(--red);}
@@ -233,9 +241,6 @@
   .chip{padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.15s;letter-spacing:0.3px;}
   .chip:hover{border-color:var(--accent);color:var(--accent);}
   .chip.active{background:var(--accent);color:var(--bg);border-color:var(--accent);box-shadow:0 0 10px rgba(0,212,255,0.3);}
-  .chip.active.status-beaten-chip{background:var(--green);border-color:var(--green);box-shadow:0 0 10px rgba(16,185,129,0.3);}
-  .chip.active.status-backlog-chip{background:var(--accent3);border-color:var(--accent3);color:var(--bg);box-shadow:0 0 10px rgba(245,158,11,0.3);}
-  .chip.active.status-wishlist-chip{background:var(--accent2);border-color:var(--accent2);box-shadow:0 0 10px rgba(124,58,237,0.3);}
   .no-results-hint{text-align:center;padding:12px;color:var(--muted);font-size:13px;}
 
   .hidden{display:none !important;}
@@ -257,7 +262,7 @@
         <input type="file" id="importFile" accept=".json" style="display:none;">
         <label class="hdr-btn" for="csvImportFile" style="background:rgba(124,58,237,0.15);border-color:rgba(124,58,237,0.4);color:#a78bfa;">📋 CSV importieren</label>
         <input type="file" id="csvImportFile" accept=".csv,.txt" style="display:none;">
-        <div style="color:var(--muted);font-size:12px;letter-spacing:1px;">powered by <span class="rawg-badge">RAWG</span> <span style="opacity:0.4;font-size:11px;margin-left:6px;">v1.0.4</span></div>
+        <div style="color:var(--muted);font-size:12px;letter-spacing:1px;">powered by <span class="rawg-badge">RAWG</span> <span style="opacity:0.4;font-size:11px;margin-left:6px;">v1.0.5</span></div>
       </div>
     </div>
   </header>
@@ -289,15 +294,6 @@
       </div>
       <div id="cloudModalMsg" style="margin-top:14px;font-size:13px;text-align:center;"></div>
     </div>
-  </div>
-
-  <div class="stats-bar">
-    <div class="stat-chip all"><span class="num" id="statAll">0</span> Gesamt</div>
-    <div class="stat-chip"><span class="num" id="statPlaying" style="color:#fb923c">0</span> Aktuell</div>
-    <div class="stat-chip beaten"><span class="num" id="statBeaten">0</span> Durchgespielt</div>
-    <div class="stat-chip backlog"><span class="num" id="statBacklog">0</span> Backlog</div>
-    <div class="stat-chip wishlist"><span class="num" id="statWishlist">0</span> Wunschliste</div>
-    <div class="stat-chip"><span class="num" id="statDropped" style="color:#f87171">0</span> Abgebrochen</div>
   </div>
 
   <div class="tabs">
@@ -488,6 +484,7 @@
         <div class="filter-label">Status filtern</div>
         <div class="chip-group" id="statusChips">
           <button class="chip active status-playing-chip" data-val="playing">Aktuell</button>
+          <button class="chip active status-owned-chip" data-val="owned">Besitze ich</button>
           <button class="chip active status-beaten-chip" data-val="beaten">Durchgespielt</button>
           <button class="chip active status-backlog-chip" data-val="backlog">Backlog</button>
           <button class="chip active status-wishlist-chip" data-val="wishlist">Wunschliste</button>
@@ -965,9 +962,6 @@ function updateYearFilter(){
 function updateStats(){
   const counts={all:games.length,playing:0,owned:0,beaten:0,backlog:0,wishlist:0,dropped:0};
   games.forEach(g=>{if(counts[g.status]!==undefined)counts[g.status]++;});
-  // stat chips
-  const statMap={all:'statAll',playing:'statPlaying',beaten:'statBeaten',backlog:'statBacklog',wishlist:'statWishlist',dropped:'statDropped'};
-  Object.entries(statMap).forEach(([k,id])=>{const el=document.getElementById(id);if(el)el.textContent=counts[k];});
   // tab counts — all statuses including owned
   Object.entries(counts).forEach(([k,v])=>{
     const el=document.getElementById('tc-'+k);
