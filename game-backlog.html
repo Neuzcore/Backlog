@@ -1578,10 +1578,24 @@ function selectCover(url){
 }
 
 // ─── INIT ─────────────────────────────────────────────────────────────────
+// Force all forms and modals closed on every load
+['addForm'].forEach(id=>{
+  const el=document.getElementById(id);
+  if(el)el.classList.remove('open');
+});
+['cloudModal','coverPickerModal','randomModal','editModal','detailModal'].forEach(id=>{
+  const el=document.getElementById(id);
+  if(el)el.classList.add('hidden');
+});
+
 newPlatPicker=buildPlatPicker('newPlatPicker','newPlatInput','newPlatDrop',[]);
 editPlatPicker=buildPlatPicker('editPlatPicker','editPlatInput','editPlatDrop',[]);
 newYearPicker=buildYearPicker('newYearPicker','newYearInput','newYearDrop',[]);
 editYearPicker=buildYearPicker('editYearPicker','editYearInput','editYearDrop',[]);
+
+// Ensure addForm is always closed on startup
+document.getElementById('addForm').classList.remove('open');
+
 render(); // show local data immediately
 
 loadCloudCreds(); // try to restore saved credentials
