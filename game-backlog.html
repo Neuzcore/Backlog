@@ -99,10 +99,10 @@
   /* Status dot in top-right corner */
   .game-tile-status{position:absolute;top:7px;right:7px;width:11px;height:11px;border-radius:50%;border:2px solid rgba(8,11,20,0.7);flex-shrink:0;}
   .game-tile-fav{position:absolute;top:5px;left:6px;font-size:15px;line-height:1;filter:drop-shadow(0 1px 3px rgba(0,0,0,0.9));pointer-events:none;}
-  .sdot-playing{background:#34d399;}
+  .sdot-playing{background:#fb923c;}
   .sdot-beaten{background:#10b981;}
-  .sdot-backlog{background:#f59e0b;}
-  .sdot-wishlist{background:#7c3aed;}
+  .sdot-backlog{background:#a78bfa;}
+  .sdot-wishlist{background:#94a3b8;}
   .sdot-dropped{background:#ef4444;}
 
   /* Old list styles kept for tags/badges used in detail modal */
@@ -266,7 +266,7 @@
         <input type="file" id="importFile" accept=".json" style="display:none;">
         <label class="hdr-btn" for="csvImportFile" style="background:rgba(124,58,237,0.15);border-color:rgba(124,58,237,0.4);color:#a78bfa;">📋 CSV importieren</label>
         <input type="file" id="csvImportFile" accept=".csv,.txt" style="display:none;">
-        <div style="color:var(--muted);font-size:12px;letter-spacing:1px;">powered by <span class="rawg-badge">RAWG</span> <span style="opacity:0.4;font-size:11px;margin-left:6px;">v1.0.6</span></div>
+        <div style="color:var(--muted);font-size:12px;letter-spacing:1px;">powered by <span class="rawg-badge">RAWG</span> <span style="opacity:0.4;font-size:11px;margin-left:6px;">v1.0.7</span></div>
       </div>
     </div>
   </header>
@@ -379,8 +379,8 @@
     </div>
     <div class="form-cover-row">
       <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0;">
-        <img class="form-cover-img" id="coverPreview" src="" alt="Cover" title="Klicken um Cover zu wechseln" onclick="openCoverPicker()">
-        <span id="coverPickerHint" style="font-size:10px;color:var(--accent);display:none;cursor:pointer;letter-spacing:0.5px;" onclick="openCoverPicker()">🖼 wechseln</span>
+        <img class="form-cover-img" id="coverPreview" src="" alt="Cover" title="Klicken um Cover zu wechseln" onclick="openCoverPicker('new')">
+        <span id="coverPickerHint" style="font-size:10px;color:var(--accent);display:none;cursor:pointer;letter-spacing:0.5px;" onclick="openCoverPicker('new')">🖼 wechseln</span>
       </div>
       <div style="flex:1;">
         <div class="form-group">
@@ -467,6 +467,14 @@
   <div class="modal" style="max-width:560px;">
     <button class="modal-close" onclick="document.getElementById('coverPickerModal').classList.add('hidden')">✕</button>
     <div class="modal-title">🖼 Cover auswählen</div>
+    <div class="form-group" style="margin-bottom:16px;">
+      <label>Eigene Bild-URL</label>
+      <div style="display:flex;gap:8px;">
+        <input type="text" id="customCoverUrl" placeholder="https://… (Link zu einem Bild)" autocomplete="off" style="flex:1;">
+        <button class="btn btn-primary" style="white-space:nowrap;" onclick="applyCustomCover()">Übernehmen</button>
+      </div>
+      <span style="font-size:11px;color:var(--muted);margin-top:4px;">Tipp: Bild im Web per Rechtsklick → „Bildadresse kopieren"</span>
+    </div>
     <div id="coverPickerContent" class="cover-loading">Lade Bilder…</div>
     <div style="display:flex;gap:10px;margin-top:16px;">
       <button class="btn btn-ghost" style="flex:1;" onclick="document.getElementById('coverPickerModal').classList.add('hidden')">Abbrechen</button>
@@ -524,7 +532,10 @@
     <input type="hidden" id="editId">
     <input type="hidden" id="editCoverUrl">
     <div style="display:flex;gap:14px;margin-bottom:14px;align-items:flex-start;">
-      <img id="editCoverImg" src="" alt="" style="width:54px;height:72px;border-radius:7px;object-fit:cover;border:1px solid var(--border);display:none;flex-shrink:0;">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0;">
+        <img id="editCoverImg" src="" alt="" title="Klicken um Cover zu wechseln" style="width:54px;height:72px;border-radius:7px;object-fit:cover;border:1px solid var(--border);display:none;cursor:pointer;" onclick="openCoverPicker('edit')">
+        <span style="font-size:10px;color:var(--accent);cursor:pointer;letter-spacing:0.5px;white-space:nowrap;" onclick="openCoverPicker('edit')">🖼 Cover ändern</span>
+      </div>
       <div style="flex:1;"><div class="form-group"><label>Spieltitel</label><input type="text" id="editTitle"></div></div>
     </div>
     <div class="form-grid">
@@ -1154,6 +1165,7 @@ document.getElementById('saveGame').addEventListener('click',()=>{
     beatenYears:newYearPicker?newYearPicker.getSelected():[],
     notes:document.getElementById('newNotes').value.trim(),
     coverUrl:document.getElementById('newCoverUrl').value||'',
+    rawgId:currentRawgId||null,
   });
   setAddFormOpen(false);save(games);clearAddForm();render();
 });
@@ -1189,6 +1201,7 @@ function openEdit(id){
   document.getElementById('editCoverUrl').value=g.coverUrl||'';
   const img=document.getElementById('editCoverImg');
   if(g.coverUrl){img.src=g.coverUrl;img.style.display='block';}else{img.style.display='none';}
+  currentRawgId=g.rawgId||null;
   setSelect('editStatus',g.status);setSelect('editGenre',g.genre);
   if(editPlatPicker)editPlatPicker.setSelected(getPlatforms(g));
   if(editYearPicker)editYearPicker.setSelected(Array.isArray(g.beatenYears)?g.beatenYears:[]);
@@ -1532,16 +1545,32 @@ document.getElementById('disconnectCloud').addEventListener('click',()=>{
 });
 
 // ─── COVER PICKER ─────────────────────────────────────────────────────────
-async function openCoverPicker(){
-  if(!currentRawgId){return;}
+// which form's cover is being edited: 'new' or 'edit'
+let coverTarget='new';
+
+function getCoverInputId(){return coverTarget==='edit'?'editCoverUrl':'newCoverUrl';}
+
+async function openCoverPicker(target){
+  if(target) coverTarget=target;
   const modal=document.getElementById('coverPickerModal');
   const content=document.getElementById('coverPickerContent');
   modal.classList.remove('hidden');
+
+  // pre-fill custom URL field with current cover
+  const currentCover=document.getElementById(getCoverInputId()).value||'';
+  document.getElementById('customCoverUrl').value=currentCover;
+
+  // No RAWG id (manually created game) → only custom URL available
+  if(!currentRawgId){
+    content.className='';
+    content.innerHTML='<p style="color:var(--muted);text-align:center;padding:16px;font-size:13px;">Für dieses Spiel sind keine RAWG-Bilder verfügbar.<br>Du kannst oben eine eigene Bild-URL einfügen.</p>';
+    return;
+  }
+
   content.className='cover-loading';
   content.innerHTML='🔍 Lade Cover-Bilder…';
 
   try{
-    // Fetch screenshots from RAWG
     const rawgUrl=`https://api.rawg.io/api/games/${currentRawgId}/screenshots?key=${RAWG_KEY}&page_size=20`;
     const strategies=[
       async()=>{const r=await fetch(rawgUrl,{signal:AbortSignal.timeout(5000)});if(!r.ok)throw new Error();return r.json();},
@@ -1551,8 +1580,6 @@ async function openCoverPicker(){
     let data=null;
     for(const fn of strategies){try{data=await fn();if(data)break;}catch(e){continue;}}
 
-    // Build image list: main cover first, then screenshots
-    const currentCover=document.getElementById('newCoverUrl').value;
     const images=[];
     if(currentCover) images.push({url:currentCover,label:'Aktuelles Cover'});
     if(data?.results){
@@ -1560,31 +1587,42 @@ async function openCoverPicker(){
     }
 
     if(!images.length){
-      content.innerHTML='<p style="color:var(--muted);text-align:center;padding:20px;">Keine weiteren Bilder gefunden.</p>';
+      content.className='';
+      content.innerHTML='<p style="color:var(--muted);text-align:center;padding:16px;font-size:13px;">Keine RAWG-Bilder gefunden – nutze die eigene Bild-URL oben.</p>';
       return;
     }
 
     content.className='cover-grid';
-    content.innerHTML=images.map((img,i)=>`
+    content.innerHTML=images.map((img)=>`
       <div class="cover-option${img.url===currentCover?' selected':''}" data-url="${esc(img.url)}" onclick="selectCover('${esc(img.url)}')">
         <img src="${esc(img.url)}" loading="lazy" alt="${esc(img.label)}" onerror="this.parentElement.style.display='none'">
       </div>
     `).join('');
 
   }catch(e){
-    content.innerHTML='<p style="color:var(--red);text-align:center;padding:20px;">Fehler beim Laden der Bilder.</p>';
+    content.className='';
+    content.innerHTML='<p style="color:var(--red);text-align:center;padding:16px;">Fehler beim Laden – nutze die eigene Bild-URL oben.</p>';
   }
 }
 
+function applyCustomCover(){
+  const url=document.getElementById('customCoverUrl').value.trim();
+  if(!url){return;}
+  selectCover(url);
+}
+
 function selectCover(url){
-  document.getElementById('newCoverUrl').value=url;
-  const p=document.getElementById('coverPreview');
-  p.src=url;p.classList.add('visible');
-  // highlight selected
+  document.getElementById(getCoverInputId()).value=url;
+  if(coverTarget==='edit'){
+    const img=document.getElementById('editCoverImg');
+    if(img){img.src=url;img.style.display='block';}
+  }else{
+    const p=document.getElementById('coverPreview');
+    if(p){p.src=url;p.classList.add('visible');}
+  }
   document.querySelectorAll('.cover-option').forEach(el=>{
     el.classList.toggle('selected',el.dataset.url===url);
   });
-  // close after short delay so user sees selection
   setTimeout(()=>document.getElementById('coverPickerModal').classList.add('hidden'),400);
 }
 
