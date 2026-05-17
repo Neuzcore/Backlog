@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Neuzcores Gaming Backlog</title>
 <meta name="theme-color" content="#080b14">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Gaming Backlog">
@@ -23,7 +26,7 @@
   body{background:var(--bg);color:var(--text);font-family:'Rajdhani',sans-serif;font-size:16px;min-height:100vh;overflow-x:hidden;}
   body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,212,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,0.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
   body::after{content:'';position:fixed;top:-200px;left:50%;transform:translateX(-50%);width:800px;height:400px;background:radial-gradient(ellipse,rgba(0,212,255,0.08) 0%,transparent 70%);pointer-events:none;z-index:0;}
-  .container{max-width:1100px;margin:0 auto;padding:0 20px;position:relative;z-index:1;}
+  .container{width:100%;padding:0 24px;position:relative;z-index:1;}
   header{padding:32px 0 24px;border-bottom:1px solid var(--border);margin-bottom:32px;}
   .header-inner{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;}
   .logo{font-family:'Orbitron',sans-serif;font-size:28px;font-weight:900;letter-spacing:2px;color:var(--accent);text-shadow:var(--glow);}
@@ -53,7 +56,7 @@
   .toolbar{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap;align-items:center;}
   .search-wrap{position:relative;}
   .search-wrap::before{content:'⌕';position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:18px;pointer-events:none;z-index:1;}
-  .search-wrap input{padding-left:38px;width:240px;}
+  .search-wrap input{padding-left:38px;width:100%;}
   input[type="text"],input[type="number"],select{background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:10px 14px;font-family:'Rajdhani',sans-serif;font-size:15px;width:100%;outline:none;transition:border-color 0.2s,box-shadow 0.2s;}
   input[type="text"]:focus,input[type="number"]:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,212,255,0.1);}
   select{cursor:pointer;min-width:140px;}
@@ -69,7 +72,7 @@
 
   /* GAME GRID (Kacheldesign) */
   .game-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;}
-  @media(max-width:480px){.game-list{grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;}}
+  @media(max-width:480px){.game-list{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;}}
 
   .game-card{
     background:var(--surface);border:1px solid var(--border);border-radius:12px;
@@ -126,7 +129,7 @@
 
   /* FILTER BAR */
   .filter-bar{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;}
-  .filter-bar .search-wrap{flex:1;min-width:160px;max-width:320px;}
+  .filter-bar .search-wrap{flex:1;min-width:160px;}
   .filter-bar .search-wrap input{width:100%;}
   .filter-bar-divider{width:1px;height:22px;background:var(--border);flex-shrink:0;}
   .filter-bar-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.15s;white-space:nowrap;letter-spacing:0.3px;}
@@ -314,14 +317,8 @@
       Filter
       <span class="filter-active-badge hidden" id="filterBadge">0</span>
     </button>
-    <button class="filter-bar-btn" id="randomBtn">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="3"/><circle cx="8" cy="8" r="1.5" fill="currentColor"/><circle cx="16" cy="8" r="1.5" fill="currentColor"/><circle cx="8" cy="16" r="1.5" fill="currentColor"/><circle cx="16" cy="16" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/></svg>
-      Zufall
-    </button>
-    <button class="filter-bar-btn btn-primary-bar" id="addBtn">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      Hinzufügen
-    </button>
+    <button class="filter-bar-btn" id="randomBtn">🎲 Zufall</button>
+    <button class="filter-bar-btn btn-primary-bar" id="addBtn">＋ Hinzufügen</button>
   </div>
 
   <div class="filter-panel hidden" id="filterPanel">
@@ -347,15 +344,11 @@
       </div>
       <div class="fp-group">
         <label>Erscheinungsjahr</label>
-        <select id="releaseYearFilter">
-          <option value="">Alle Jahre</option>
-        </select>
+        <select id="releaseYearFilter"><option value="">Alle Jahre</option></select>
       </div>
       <div class="fp-group">
         <label>Durchgespielt in</label>
-        <select id="yearFilter">
-          <option value="">Alle Jahre</option>
-        </select>
+        <select id="yearFilter"><option value="">Alle Jahre</option></select>
       </div>
       <div class="fp-group">
         <label>Sortierung</label>
@@ -367,10 +360,7 @@
         </select>
       </div>
       <div class="fp-group" style="display:flex;align-items:flex-end;">
-        <button class="filter-bar-btn" style="width:100%;justify-content:center;" onclick="resetFilters()">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
-          Filter zurücksetzen
-        </button>
+        <button class="filter-bar-btn" style="width:100%;justify-content:center;" onclick="resetFilters()">↺ Filter zurücksetzen</button>
       </div>
     </div>
   </div>
