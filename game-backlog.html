@@ -1,5 +1,3 @@
----
----
 <!DOCTYPE html>
 <html lang="de">
 <head>
@@ -368,7 +366,7 @@
   </div>
 
   <!-- ADD FORM -->
-  <div class="add-form" id="addForm">
+  <div class="add-form" id="addForm" style="display:none;">
     <div class="form-title">⬡ Neues Spiel hinzufügen</div>
     <div class="form-group" style="margin-bottom:12px;">
       <label>Spiel in RAWG-Datenbank suchen <span class="rawg-badge">LIVE</span></label>
@@ -1126,8 +1124,15 @@ function pickRawg(g){
 document.addEventListener('click',e=>{if(!e.target.closest('.rawg-wrap'))document.getElementById('rawgResults').classList.add('hidden');});
 
 // ─── ADD ──────────────────────────────────────────────────────────────────
-document.getElementById('addBtn').addEventListener('click',()=>document.getElementById('addForm').classList.toggle('open'));
-document.getElementById('cancelAdd').addEventListener('click',()=>{document.getElementById('addForm').classList.remove('open');clearAddForm();});
+document.getElementById('addBtn').addEventListener('click',()=>{
+  const f=document.getElementById('addForm');
+  if(f.style.display==='none'||f.style.display===''){f.style.display='block';}
+  else{f.style.display='none';clearAddForm();}
+});
+document.getElementById('cancelAdd').addEventListener('click',()=>{
+  document.getElementById('addForm').style.display='none';
+  clearAddForm();
+});
 
 document.getElementById('saveGame').addEventListener('click',()=>{
   const title=document.getElementById('newTitle').value.trim();
@@ -1147,7 +1152,7 @@ document.getElementById('saveGame').addEventListener('click',()=>{
     notes:document.getElementById('newNotes').value.trim(),
     coverUrl:document.getElementById('newCoverUrl').value||'',
   });
-  save(games);clearAddForm();document.getElementById('addForm').classList.remove('open');render();
+  save(games);clearAddForm();document.getElementById('addForm').style.display='none';render();
 });
 
 function clearAddForm(){
@@ -1583,7 +1588,7 @@ function selectCover(url){
 // Force all forms and modals closed on every load
 ['addForm'].forEach(id=>{
   const el=document.getElementById(id);
-  if(el)el.classList.remove('open');
+  if(el&&el.id==='addForm')el.style.display='none';else if(el)el.classList.remove('open');
 });
 ['cloudModal','coverPickerModal','randomModal','editModal','detailModal'].forEach(id=>{
   const el=document.getElementById(id);
@@ -1596,7 +1601,7 @@ newYearPicker=buildYearPicker('newYearPicker','newYearInput','newYearDrop',[]);
 editYearPicker=buildYearPicker('editYearPicker','editYearInput','editYearDrop',[]);
 
 // Ensure addForm is always closed on startup
-document.getElementById('addForm').classList.remove('open');
+document.getElementById('addForm').style.display='none';
 
 render(); // show local data immediately
 
