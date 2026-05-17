@@ -26,7 +26,7 @@
   body{background:var(--bg);color:var(--text);font-family:'Rajdhani',sans-serif;font-size:16px;min-height:100vh;overflow-x:hidden;}
   body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,212,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,0.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
   body::after{content:'';position:fixed;top:-200px;left:50%;transform:translateX(-50%);width:800px;height:400px;background:radial-gradient(ellipse,rgba(0,212,255,0.08) 0%,transparent 70%);pointer-events:none;z-index:0;}
-  .container{width:100%;padding:0 24px;position:relative;z-index:1;}
+  .container{max-width:1100px;margin:0 auto;padding:0 20px;position:relative;z-index:1;}
   header{padding:32px 0 24px;border-bottom:1px solid var(--border);margin-bottom:32px;}
   .header-inner{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;}
   .logo{font-family:'Orbitron',sans-serif;font-size:28px;font-weight:900;letter-spacing:2px;color:var(--accent);text-shadow:var(--glow);}
@@ -155,8 +155,11 @@
   .empty-state .emoji{font-size:48px;margin-bottom:12px;}
 
   /* ADD / EDIT FORMS */
-  .add-form{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:24px;display:none !important;animation:fadeIn 0.3s ease;}
-  .add-form.open{display:block !important;}
+  .add-form{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:24px;display:none;animation:fadeIn 0.3s ease;}
+  .add-form.open{display:block;}
+  /* form-actions only visible when parent form is open */
+  #addForm .form-actions{display:none;}
+  #addForm.open .form-actions{display:flex;}
   .form-title{font-family:'Orbitron',sans-serif;font-size:13px;color:var(--accent);letter-spacing:2px;margin-bottom:16px;text-transform:uppercase;}
   .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
   @media(max-width:560px){.form-grid{grid-template-columns:1fr;}}
@@ -254,7 +257,7 @@
         <input type="file" id="importFile" accept=".json" style="display:none;">
         <label class="hdr-btn" for="csvImportFile" style="background:rgba(124,58,237,0.15);border-color:rgba(124,58,237,0.4);color:#a78bfa;">📋 CSV importieren</label>
         <input type="file" id="csvImportFile" accept=".csv,.txt" style="display:none;">
-        <div style="color:var(--muted);font-size:12px;letter-spacing:1px;">powered by <span class="rawg-badge">RAWG</span> <span style="opacity:0.4;font-size:11px;margin-left:6px;">v1.0.1</span></div>
+        <div style="color:var(--muted);font-size:12px;letter-spacing:1px;">powered by <span class="rawg-badge">RAWG</span> <span style="opacity:0.4;font-size:11px;margin-left:6px;">v1.0.4</span></div>
       </div>
     </div>
   </header>
@@ -366,7 +369,7 @@
   </div>
 
   <!-- ADD FORM -->
-  <div class="add-form" id="addForm" style="display:none;">
+  <div class="add-form" id="addForm">
     <div class="form-title">⬡ Neues Spiel hinzufügen</div>
     <div class="form-group" style="margin-bottom:12px;">
       <label>Spiel in RAWG-Datenbank suchen <span class="rawg-badge">LIVE</span></label>
@@ -428,7 +431,6 @@
           <option value="">– kein Jahr –</option>
           <option value="2026">2026</option><option value="2025">2025</option><option value="2024">2024</option><option value="2023">2023</option><option value="2022">2022</option><option value="2021">2021</option><option value="2020">2020</option><option value="2019">2019</option><option value="2018">2018</option><option value="2017">2017</option><option value="2016">2016</option><option value="2015">2015</option><option value="2014">2014</option><option value="2013">2013</option><option value="2012">2012</option><option value="2011">2011</option><option value="2010">2010</option><option value="2009">2009</option><option value="2008">2008</option><option value="2007">2007</option><option value="2006">2006</option><option value="2005">2005</option><option value="2004">2004</option><option value="2003">2003</option><option value="2002">2002</option><option value="2001">2001</option><option value="2000">2000</option><option value="1999">1999</option><option value="1998">1998</option><option value="1997">1997</option><option value="1996">1996</option><option value="1995">1995</option><option value="1994">1994</option><option value="1993">1993</option><option value="1992">1992</option><option value="1991">1991</option><option value="1990">1990</option><option value="1989">1989</option><option value="1988">1988</option><option value="1987">1987</option><option value="1986">1986</option><option value="1985">1985</option><option value="1984">1984</option><option value="1983">1983</option><option value="1982">1982</option><option value="1981">1981</option><option value="1980">1980</option><option value="1979">1979</option><option value="1978">1978</option><option value="1977">1977</option><option value="1976">1976</option><option value="1975">1975</option><option value="1974">1974</option><option value="1973">1973</option><option value="1972">1972</option><option value="1971">1971</option><option value="1970">1970</option>
         </select>
-      </div>
       </div>
       <div class="form-group">
         <label>Durchspieldurchläufe</label>
@@ -613,6 +615,13 @@
 </div>
 
 <script>
+
+// Open/close add form via single .open class (CSS handles all visibility)
+function setAddFormOpen(open){
+  const f=document.getElementById('addForm');
+  if(!f)return;
+  f.classList.toggle('open',open);
+}
 // ─── CONFIG ───────────────────────────────────────────────────────────────
 const RAWG_KEY='43ad5537da7644b2a23d67661ae38c96';
 const STORAGE_KEY='gamevault_v4';
@@ -1126,11 +1135,12 @@ document.addEventListener('click',e=>{if(!e.target.closest('.rawg-wrap'))documen
 // ─── ADD ──────────────────────────────────────────────────────────────────
 document.getElementById('addBtn').addEventListener('click',()=>{
   const f=document.getElementById('addForm');
-  if(f.style.display==='none'||f.style.display===''){f.style.display='block';}
-  else{f.style.display='none';clearAddForm();}
+  const open=f.classList.contains('open');
+  setAddFormOpen(!open);
+  if(open)clearAddForm();
 });
 document.getElementById('cancelAdd').addEventListener('click',()=>{
-  document.getElementById('addForm').style.display='none';
+  setAddFormOpen(false);
   clearAddForm();
 });
 
@@ -1152,7 +1162,7 @@ document.getElementById('saveGame').addEventListener('click',()=>{
     notes:document.getElementById('newNotes').value.trim(),
     coverUrl:document.getElementById('newCoverUrl').value||'',
   });
-  save(games);clearAddForm();document.getElementById('addForm').style.display='none';render();
+  setAddFormOpen(false);save(games);clearAddForm();render();
 });
 
 function clearAddForm(){
@@ -1586,10 +1596,7 @@ function selectCover(url){
 
 // ─── INIT ─────────────────────────────────────────────────────────────────
 // Force all forms and modals closed on every load
-['addForm'].forEach(id=>{
-  const el=document.getElementById(id);
-  if(el&&el.id==='addForm')el.style.display='none';else if(el)el.classList.remove('open');
-});
+setAddFormOpen(false);
 ['cloudModal','coverPickerModal','randomModal','editModal','detailModal'].forEach(id=>{
   const el=document.getElementById(id);
   if(el)el.classList.add('hidden');
@@ -1599,9 +1606,6 @@ newPlatPicker=buildPlatPicker('newPlatPicker','newPlatInput','newPlatDrop',[]);
 editPlatPicker=buildPlatPicker('editPlatPicker','editPlatInput','editPlatDrop',[]);
 newYearPicker=buildYearPicker('newYearPicker','newYearInput','newYearDrop',[]);
 editYearPicker=buildYearPicker('editYearPicker','editYearInput','editYearDrop',[]);
-
-// Ensure addForm is always closed on startup
-document.getElementById('addForm').style.display='none';
 
 render(); // show local data immediately
 
