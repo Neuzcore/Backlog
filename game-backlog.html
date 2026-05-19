@@ -61,8 +61,9 @@
   /* TOOLBAR — kept for legacy, filter-bar replaces it */
   .toolbar{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap;align-items:center;}
   .search-wrap{position:relative;}
-  .search-wrap::before{content:'⌕';position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:18px;pointer-events:none;z-index:1;}
-  .search-wrap input{padding-left:46px;width:100%;}
+  .results-count{font-size:13px;color:var(--muted);margin:0 0 14px 2px;letter-spacing:0.3px;min-height:16px;}
+  .results-count b{color:var(--text);font-weight:600;}
+  .search-wrap input{width:100%;}
   input[type="text"],input[type="number"],select{background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:10px 14px;font-family:'Rajdhani',sans-serif;font-size:15px;width:100%;outline:none;transition:border-color 0.2s,box-shadow 0.2s;}
   input[type="text"]:focus,input[type="number"]:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,212,255,0.1);}
   select{cursor:pointer;min-width:140px;}
@@ -266,7 +267,7 @@
         <input type="file" id="importFile" accept=".json" style="display:none;">
         <label class="hdr-btn" for="csvImportFile" style="background:rgba(124,58,237,0.15);border-color:rgba(124,58,237,0.4);color:#a78bfa;">📋 CSV importieren</label>
         <input type="file" id="csvImportFile" accept=".csv,.txt" style="display:none;">
-        <div style="color:var(--muted);font-size:12px;letter-spacing:1px;">powered by <span class="rawg-badge">RAWG</span> <span style="opacity:0.4;font-size:11px;margin-left:6px;">v1.0.7</span></div>
+        <div style="color:var(--muted);font-size:12px;letter-spacing:1px;">powered by <span class="rawg-badge">RAWG</span> <span style="opacity:0.4;font-size:11px;margin-left:6px;">v1.0.9</span></div>
       </div>
     </div>
   </header>
@@ -303,8 +304,8 @@
   <div class="tabs">
     <button class="tab active" data-tab="all">Alle <span class="tab-count" id="tc-all">0</span></button>
     <button class="tab" data-tab="playing">Aktuell <span class="tab-count" id="tc-playing">0</span></button>
-    <button class="tab" data-tab="beaten">Durchgespielt <span class="tab-count" id="tc-beaten">0</span></button>
     <button class="tab" data-tab="backlog">Backlog <span class="tab-count" id="tc-backlog">0</span></button>
+    <button class="tab" data-tab="beaten">Durchgespielt <span class="tab-count" id="tc-beaten">0</span></button>
     <button class="tab" data-tab="wishlist">Wunschliste <span class="tab-count" id="tc-wishlist">0</span></button>
     <button class="tab" data-tab="dropped">Abgebrochen <span class="tab-count" id="tc-dropped">0</span></button>
   </div>
@@ -325,8 +326,7 @@
 
   <div class="filter-panel hidden" id="filterPanel">
     <div class="filter-panel-grid">
-      <div class="fp-group">
-        <label>Plattform</label>
+      <div class="fp-group">        <label>Plattform</label>
         <select id="platformFilter">
           <option value="">Alle Plattformen</option>
           <optgroup label="PC Launcher"><option>Steam</option><option>GOG</option><option>Epic Games Store</option><option>EA App</option><option>Ubisoft Connect</option><option>Battle.net</option><option>Xbox PC / Game Pass</option><option>PlayStation PC</option></optgroup>
@@ -458,6 +458,7 @@
     </div>
   </div>
 
+  <div class="results-count" id="resultsCount"></div>
   <div class="game-list" id="gameList"></div>
   <div class="empty-state hidden" id="emptyState"><div class="emoji">🕹️</div><p>Keine Spiele gefunden.</p></div>
 </div>
@@ -991,6 +992,22 @@ function render(){
   const list=document.getElementById('gameList'),empty=document.getElementById('emptyState');
   const filtered=getFiltered();
   updateStats();
+
+  // results counter — only visible when a filter/search/tab is active
+  const rc=document.getElementById('resultsCount');
+  if(rc){
+    const total=games.length;
+    const isFiltered=activeTab!=='all'||!!searchQuery||!!platformFilter||!!genreFilter||!!yearFilter||!!releaseYearFilter;
+    const n=filtered.length;
+    if(isFiltered){
+      rc.innerHTML=`<b>${n}</b> von ${total} ${total===1?'Spiel':'Spielen'} angezeigt`;
+      rc.style.display='block';
+    }else{
+      rc.innerHTML='';
+      rc.style.display='none';
+    }
+  }
+
   if(!filtered.length){list.innerHTML='';empty.classList.remove('hidden');return;}
   empty.classList.add('hidden');
 
