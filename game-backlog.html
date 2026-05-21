@@ -57,6 +57,47 @@
   .tab.active[data-tab="backlog"]{background:#a78bfa;color:var(--bg);box-shadow:0 0 12px rgba(167,139,250,0.45);}
   .tab.active[data-tab="wishlist"]{background:#94a3b8;color:var(--bg);box-shadow:0 0 12px rgba(148,163,184,0.45);}
   .tab.active[data-tab="dropped"]{background:var(--red);color:var(--bg);box-shadow:0 0 12px rgba(239,68,68,0.45);}
+  .tab.active[data-tab="playlist"]{background:#fbbf24;color:var(--bg);box-shadow:0 0 12px rgba(251,191,36,0.5);}
+
+  /* PLAYLIST SECTION */
+  .playlist-section{margin-bottom:24px;}
+  .playlist-header{display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap;}
+  .playlist-title{font-family:'Orbitron',sans-serif;font-size:16px;letter-spacing:2px;color:#fbbf24;text-transform:uppercase;flex:1;min-width:160px;}
+  .playlist-actions{display:flex;gap:8px;flex-wrap:wrap;}
+  .playlist-btn{background:transparent;border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px 14px;font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:all 0.2s;}
+  .playlist-btn:hover{border-color:#fbbf24;color:#fbbf24;}
+  .playlist-btn.primary{background:#fbbf24;border-color:#fbbf24;color:var(--bg);}
+  .playlist-btn.primary:hover{background:#f59e0b;border-color:#f59e0b;color:var(--bg);}
+  .playlist-btn.danger:hover{border-color:var(--red);color:var(--red);}
+
+  .playlist-progress-wrap{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:18px;}
+  .playlist-progress-info{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;font-size:14px;}
+  .playlist-progress-info b{color:#fbbf24;font-size:18px;}
+  .playlist-progress-info .pct{color:var(--muted);font-size:13px;}
+  .playlist-progress-bar{height:10px;background:var(--surface2);border-radius:5px;overflow:hidden;border:1px solid var(--border);}
+  .playlist-progress-fill{height:100%;background:linear-gradient(90deg,#fbbf24,#f59e0b);border-radius:5px;transition:width 0.4s ease;box-shadow:0 0 8px rgba(251,191,36,0.5);}
+
+  .playlist-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;}
+  .playlist-slot{background:var(--surface);border:2px dashed var(--border);border-radius:10px;aspect-ratio:3/4;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--muted);font-size:13px;text-align:center;cursor:pointer;transition:all 0.2s;padding:14px;}
+  .playlist-slot:hover{border-color:#fbbf24;color:#fbbf24;}
+  .playlist-slot .slot-num{font-family:'Orbitron',sans-serif;font-size:22px;color:#fbbf24;opacity:0.4;margin-bottom:4px;}
+  .playlist-card{position:relative;border:2px solid transparent;border-radius:10px;overflow:visible;}
+  .playlist-card.beaten{border-color:var(--green);box-shadow:0 0 10px rgba(16,185,129,0.3);}
+  .playlist-card-remove{position:absolute;top:-8px;right:-8px;width:24px;height:24px;border-radius:50%;background:var(--red);color:#fff;border:2px solid var(--bg);font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:5;line-height:1;padding:0;}
+  .playlist-card-remove:hover{transform:scale(1.1);}
+  .playlist-card-beaten-overlay{position:absolute;top:7px;left:6px;font-size:18px;line-height:1;filter:drop-shadow(0 1px 3px rgba(0,0,0,0.9));pointer-events:none;}
+
+  .playlist-empty{text-align:center;padding:32px 20px;color:var(--muted);background:var(--surface);border:1px dashed var(--border);border-radius:10px;}
+  .playlist-empty .emoji{font-size:36px;margin-bottom:8px;}
+
+  .challenge-complete{background:linear-gradient(135deg,rgba(251,191,36,0.15),rgba(245,158,11,0.08));border:2px solid #fbbf24;border-radius:12px;padding:24px;text-align:center;margin-bottom:18px;box-shadow:0 0 20px rgba(251,191,36,0.2);}
+  .challenge-complete h2{font-family:'Orbitron',sans-serif;color:#fbbf24;font-size:22px;letter-spacing:3px;margin-bottom:8px;}
+  .challenge-complete p{color:var(--text);margin-bottom:14px;}
+
+  /* Playlist target marker on regular tiles */
+  .game-tile-playlist{position:absolute;top:5px;left:6px;font-size:15px;line-height:1;filter:drop-shadow(0 1px 3px rgba(0,0,0,0.9));pointer-events:none;}
+  /* If both favorite and playlist: stack vertically */
+  .game-tile-playlist + .game-tile-fav, .game-card:has(.game-tile-playlist) .game-tile-fav{top:24px;}
 
   /* TOOLBAR — kept for legacy, filter-bar replaces it */
   .toolbar{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap;align-items:center;}
@@ -267,7 +308,7 @@
         <input type="file" id="importFile" accept=".json" style="display:none;">
         <label class="hdr-btn" for="csvImportFile" style="background:rgba(124,58,237,0.15);border-color:rgba(124,58,237,0.4);color:#a78bfa;">📋 CSV importieren</label>
         <input type="file" id="csvImportFile" accept=".csv,.txt" style="display:none;">
-        <div style="color:var(--muted);font-size:12px;letter-spacing:1px;">powered by <span class="rawg-badge">RAWG</span> <span style="opacity:0.4;font-size:11px;margin-left:6px;">v1.0.9</span></div>
+        <div style="color:var(--muted);font-size:12px;letter-spacing:1px;">powered by <span class="rawg-badge">RAWG</span> <span style="opacity:0.4;font-size:11px;margin-left:6px;">v1.1.0</span></div>
       </div>
     </div>
   </header>
@@ -308,6 +349,7 @@
     <button class="tab" data-tab="beaten">Durchgespielt <span class="tab-count" id="tc-beaten">0</span></button>
     <button class="tab" data-tab="wishlist">Wunschliste <span class="tab-count" id="tc-wishlist">0</span></button>
     <button class="tab" data-tab="dropped">Abgebrochen <span class="tab-count" id="tc-dropped">0</span></button>
+    <button class="tab" data-tab="playlist">🎯 Playlist <span class="tab-count" id="tc-playlist">0</span></button>
   </div>
 
   <div class="filter-bar">
@@ -456,6 +498,27 @@
       <button class="btn btn-ghost" id="cancelAdd">Abbrechen</button>
       <button class="btn btn-primary" id="saveGame">Speichern</button>
     </div>
+  </div>
+
+  <div class="playlist-section" id="playlistSection" style="display:none;">
+    <div class="playlist-header">
+      <div class="playlist-title">🎯 Meine Challenge</div>
+      <div class="playlist-actions">
+        <button class="playlist-btn primary" id="playlistAddBtn">＋ Spiel</button>
+        <button class="playlist-btn" id="playlistRandomBtn">🎲 Zufall</button>
+        <button class="playlist-btn" id="playlistSlotsBtn">✏️ Größe</button>
+        <button class="playlist-btn danger" id="playlistClearBtn">🗑 Leeren</button>
+      </div>
+    </div>
+    <div id="challengeCompleteBanner"></div>
+    <div class="playlist-progress-wrap">
+      <div class="playlist-progress-info">
+        <span><b id="playlistProgressDone">0</b> / <span id="playlistProgressTotal">0</span> durchgespielt</span>
+        <span class="pct" id="playlistProgressPct">0%</span>
+      </div>
+      <div class="playlist-progress-bar"><div class="playlist-progress-fill" id="playlistProgressFill" style="width:0%;"></div></div>
+    </div>
+    <div class="playlist-grid" id="playlistGrid"></div>
   </div>
 
   <div class="results-count" id="resultsCount"></div>
@@ -617,8 +680,62 @@
     <div class="detail-meta" id="detailMeta"></div>
     <div id="detailRows"></div>
     <div class="detail-actions">
+      <button class="btn btn-ghost" id="detailPlaylistBtn" style="flex:1;border-color:#fbbf24;color:#fbbf24;">🎯 Playlist</button>
       <button class="btn btn-primary" id="detailEditBtn" style="flex:1;">✏️ Bearbeiten</button>
       <button class="btn btn-ghost" id="detailDeleteBtn" style="flex:1;color:var(--red);border-color:var(--red);">🗑 Löschen</button>
+    </div>
+  </div>
+</div>
+
+<!-- PLAYLIST: SLOT COUNT PICKER -->
+<div class="modal-overlay hidden" id="playlistSlotsModal">
+  <div class="modal" style="max-width:380px;">
+    <button class="modal-close" onclick="document.getElementById('playlistSlotsModal').classList.add('hidden')">✕</button>
+    <div class="modal-title">🎯 Playlist-Größe</div>
+    <p style="color:var(--muted);font-size:13px;margin-bottom:14px;">Wie viele Spiele soll deine Challenge haben?</p>
+    <div style="display:flex;gap:10px;justify-content:center;margin-bottom:14px;">
+      <button class="playlist-btn" data-slots="3" onclick="setPlaylistSlots(3)">3 Spiele</button>
+      <button class="playlist-btn" data-slots="4" onclick="setPlaylistSlots(4)">4 Spiele</button>
+      <button class="playlist-btn" data-slots="5" onclick="setPlaylistSlots(5)">5 Spiele</button>
+    </div>
+    <p id="playlistSlotsWarn" style="color:var(--red);font-size:12px;text-align:center;display:none;">⚠ Du hast aktuell mehr Spiele in der Playlist als die neue Größe erlaubt. Die letzten werden entfernt.</p>
+  </div>
+</div>
+
+<!-- PLAYLIST: PICK GAME -->
+<div class="modal-overlay hidden" id="playlistPickModal">
+  <div class="modal" style="max-width:560px;">
+    <button class="modal-close" onclick="document.getElementById('playlistPickModal').classList.add('hidden')">✕</button>
+    <div class="modal-title">＋ Spiel zur Playlist hinzufügen</div>
+    <div class="search-wrap" style="margin-bottom:12px;">
+      <input type="text" id="playlistPickSearch" placeholder="In Bibliothek suchen…" autocomplete="off">
+    </div>
+    <div id="playlistPickList" style="max-height:50vh;overflow-y:auto;display:flex;flex-direction:column;gap:6px;"></div>
+    <p id="playlistPickEmpty" style="color:var(--muted);font-size:13px;text-align:center;padding:14px;display:none;">Keine passenden Spiele gefunden.</p>
+  </div>
+</div>
+
+<!-- PLAYLIST: RANDOM CONFIG -->
+<div class="modal-overlay hidden" id="playlistRandomModal">
+  <div class="modal" style="max-width:420px;">
+    <button class="modal-close" onclick="document.getElementById('playlistRandomModal').classList.add('hidden')">✕</button>
+    <div class="modal-title">🎲 Zufällig hinzufügen</div>
+    <div class="form-group" style="margin-bottom:12px;">
+      <label>Anzahl</label>
+      <select id="playlistRandomCount"></select>
+    </div>
+    <div class="form-group" style="margin-bottom:14px;">
+      <label>Pool</label>
+      <select id="playlistRandomPool">
+        <option value="backlog" selected>Nur Backlog</option>
+        <option value="backlog_playing">Backlog + Aktuell</option>
+        <option value="all">Alle (außer Durchgespielt &amp; Abgebrochen)</option>
+      </select>
+    </div>
+    <p id="playlistRandomInfo" style="color:var(--muted);font-size:12px;margin-bottom:14px;"></p>
+    <div style="display:flex;gap:10px;">
+      <button class="btn btn-ghost" style="flex:1;" onclick="document.getElementById('playlistRandomModal').classList.add('hidden')">Abbrechen</button>
+      <button class="btn btn-primary" style="flex:1;" id="playlistRandomConfirm">🎲 Würfeln</button>
     </div>
   </div>
 </div>
@@ -726,9 +843,22 @@ function saveLocal(g){
   try{ localStorage.setItem(STORAGE_KEY,JSON.stringify(g)); }catch(e){}
 }
 
+function loadPlaylistLocal(){
+  try{
+    const r=localStorage.getItem(PLAYLIST_STORAGE_KEY);
+    if(!r) return {slots:5,gameIds:[],celebrated:false};
+    const p=JSON.parse(r);
+    return {slots:[3,4,5].includes(p.slots)?p.slots:5, gameIds:Array.isArray(p.gameIds)?p.gameIds:[], celebrated:!!p.celebrated};
+  }catch{return {slots:5,gameIds:[],celebrated:false};}
+}
+function savePlaylistLocal(p){
+  try{ localStorage.setItem(PLAYLIST_STORAGE_KEY,JSON.stringify(p)); }catch(e){}
+}
+
 // Save = local immediately + cloud (debounced)
 function save(g){
   saveLocal(g);
+  savePlaylistLocal(playlist);
   if(!cloudEnabled) return;
   clearTimeout(saveDebounce);
   saveDebounce=setTimeout(()=>saveCloud(g),800);
@@ -741,7 +871,7 @@ async function saveCloud(g){
     const res=await fetch(JSONBIN_URL,{
       method:'PUT',
       headers:{'Content-Type':'application/json','X-Master-Key':JSONBIN_KEY},
-      body:JSON.stringify({games:g}),
+      body:JSON.stringify({games:g, playlist:playlist}),
       signal:AbortSignal.timeout(10000),
     });
     if(!res.ok) throw new Error('save failed '+res.status);
@@ -763,6 +893,12 @@ async function loadCloud(){
     const data=await res.json();
     const record=data.record||{};
     const cloudGames=Array.isArray(record.games)?record.games:(Array.isArray(record)?record:null);
+    // Pull playlist if present
+    if(record && record.playlist && typeof record.playlist==='object'){
+      const p=record.playlist;
+      playlist={slots:[3,4,5].includes(p.slots)?p.slots:5, gameIds:Array.isArray(p.gameIds)?p.gameIds:[], celebrated:!!p.celebrated};
+      savePlaylistLocal(playlist);
+    }
     setCloudStatus('ok');
     if(cloudGames && cloudGames.length){
       return migrate(cloudGames);
@@ -795,7 +931,14 @@ function setCloudStatus(s){
 
 let games=loadLocal();
 let nextId=games.length?Math.max(...games.map(g=>g.id))+1:1;
+playlist=loadPlaylistLocal();
+// Clean up playlist: remove ids that no longer exist
+playlist.gameIds=playlist.gameIds.filter(id=>games.some(g=>g.id===id));
 let activeTab='all',searchQuery='',platformFilter='',genreFilter='',yearFilter='',releaseYearFilter='',sortOrder='az';
+// Playlist (Challenge): single playlist with configurable slot count, default pool = backlog
+let playlist={slots:5, gameIds:[], celebrated:false};
+const PLAYLIST_STORAGE_KEY='gamevault_playlist_v1';
+const PLAYLIST_DEFAULT_POOL='backlog';
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
@@ -990,8 +1133,31 @@ function updateStats(){
 
 function render(){
   const list=document.getElementById('gameList'),empty=document.getElementById('emptyState');
-  const filtered=getFiltered();
+  const playlistSection=document.getElementById('playlistSection');
   updateStats();
+
+  // PLAYLIST TAB → different view
+  if(activeTab==='playlist'){
+    if(list)list.innerHTML='';
+    if(empty)empty.classList.add('hidden');
+    const rc=document.getElementById('resultsCount');
+    if(rc){rc.innerHTML='';rc.style.display='none';}
+    // hide filter bar / panel in playlist view since they don't apply
+    const fb=document.querySelector('.filter-bar');
+    if(fb)fb.style.display='none';
+    const fp=document.getElementById('filterPanel');
+    if(fp&&!fp.classList.contains('hidden'))fp.classList.add('hidden');
+    if(playlistSection){playlistSection.style.display='block';renderPlaylist();}
+    return;
+  }
+
+  // Restore filter bar for normal views
+  const fb=document.querySelector('.filter-bar');
+  if(fb)fb.style.display='';
+
+  if(playlistSection)playlistSection.style.display='none';
+
+  const filtered=getFiltered();
 
   // results counter — only visible when a filter/search/tab is active
   const rc=document.getElementById('resultsCount');
@@ -1012,21 +1178,255 @@ function render(){
   empty.classList.add('hidden');
 
   const statusDotClass={playing:'sdot-playing',beaten:'sdot-beaten',backlog:'sdot-backlog',wishlist:'sdot-wishlist',dropped:'sdot-dropped'};
+  const inPlaylist=id=>playlist.gameIds.includes(id);
 
   list.innerHTML=filtered.map(g=>{
     const dot=statusDotClass[g.status]||'sdot-backlog';
     const coverHtml=g.coverUrl
       ?`<img class="game-tile-cover" src="${esc(g.coverUrl)}" loading="lazy" onerror="this.style.display='none';this.nextSibling.style.display='flex'"><div class="game-tile-cover-ph" style="display:none;">🎮</div>`
       :`<div class="game-tile-cover-ph">🎮</div>`;
+    const playlistBadge=inPlaylist(g.id)?'<div class="game-tile-playlist" title="In Playlist">🎯</div>':'';
+    const favBadge=g.isFavorite?`<div class="game-tile-fav" title="Lieblingsspiel"${inPlaylist(g.id)?' style="top:24px;"':''}>👑</div>`:'';
     return`<div class="game-card" data-id="${g.id}" onclick="openDetail(${g.id})">
       ${coverHtml}
       <div class="game-tile-status ${dot}" title="${STATUS_LABELS[g.status]||''}"></div>
-      ${g.isFavorite?'<div class="game-tile-fav" title="Lieblingsspiel">👑</div>':''}
+      ${playlistBadge}
+      ${favBadge}
       <div class="game-tile-footer">
         <div class="game-tile-title">${esc(g.title)}</div>
       </div>
     </div>`;
   }).join('');
+}
+
+// ═══ PLAYLIST / CHALLENGE ════════════════════════════════════════════════
+function getPlaylistGames(){
+  // Returns ordered list of playlist games (objects), skipping ids that no longer exist
+  const out=[];
+  playlist.gameIds.forEach(id=>{const g=games.find(g=>g.id===id);if(g)out.push(g);});
+  return out;
+}
+
+function syncPlaylistTabCount(){
+  const el=document.getElementById('tc-playlist');
+  if(el)el.textContent=playlist.gameIds.length;
+}
+
+function renderPlaylist(){
+  const grid=document.getElementById('playlistGrid');
+  const banner=document.getElementById('challengeCompleteBanner');
+  if(!grid||!banner) return;
+
+  const items=getPlaylistGames();
+  const beatenCount=items.filter(g=>g.status==='beaten').length;
+  const total=playlist.slots;
+  const pct=total>0?Math.round((beatenCount/total)*100):0;
+
+  // Progress display
+  document.getElementById('playlistProgressDone').textContent=beatenCount;
+  document.getElementById('playlistProgressTotal').textContent=total;
+  document.getElementById('playlistProgressPct').textContent=pct+'%';
+  document.getElementById('playlistProgressFill').style.width=pct+'%';
+
+  // Challenge complete banner: all slots filled AND all beaten
+  const isComplete=items.length===total && total>0 && beatenCount===total;
+  if(isComplete){
+    banner.innerHTML=`<div class="challenge-complete">
+      <h2>🎉 Challenge geschafft!</h2>
+      <p>Alle ${total} Spiele durchgespielt. Glückwunsch!</p>
+      <button class="btn btn-primary" onclick="clearPlaylist(true)">🚀 Neue Challenge starten</button>
+    </div>`;
+  }else{
+    banner.innerHTML='';
+  }
+
+  const statusDotClass={playing:'sdot-playing',beaten:'sdot-beaten',backlog:'sdot-backlog',wishlist:'sdot-wishlist',dropped:'sdot-dropped'};
+
+  // Build slot tiles: filled + empty placeholders up to playlist.slots
+  let html='';
+  for(let i=0;i<total;i++){
+    const g=items[i];
+    if(g){
+      const dot=statusDotClass[g.status]||'sdot-backlog';
+      const coverHtml=g.coverUrl
+        ?`<img class="game-tile-cover" src="${esc(g.coverUrl)}" loading="lazy" onerror="this.style.display='none';this.nextSibling.style.display='flex'"><div class="game-tile-cover-ph" style="display:none;">🎮</div>`
+        :`<div class="game-tile-cover-ph">🎮</div>`;
+      const beatenOverlay=g.status==='beaten'?'<div class="playlist-card-beaten-overlay" title="Durchgespielt">✅</div>':'';
+      html+=`<div class="game-card playlist-card${g.status==='beaten'?' beaten':''}" data-id="${g.id}">
+        <button class="playlist-card-remove" title="Aus Playlist entfernen" onclick="event.stopPropagation();removeFromPlaylist(${g.id})">✕</button>
+        <div onclick="openDetail(${g.id})" style="cursor:pointer;">
+          ${coverHtml}
+          <div class="game-tile-status ${dot}" title="${STATUS_LABELS[g.status]||''}"></div>
+          ${beatenOverlay}
+          ${g.isFavorite?`<div class="game-tile-fav" title="Lieblingsspiel" style="top:${g.status==='beaten'?'28px':'5px'};">👑</div>`:''}
+          <div class="game-tile-footer"><div class="game-tile-title">${esc(g.title)}</div></div>
+        </div>
+      </div>`;
+    }else{
+      html+=`<div class="playlist-slot" onclick="openPlaylistPick()">
+        <div class="slot-num">${i+1}</div>
+        <div>+ Spiel hinzufügen</div>
+      </div>`;
+    }
+  }
+  grid.innerHTML=html;
+  syncPlaylistTabCount();
+}
+
+function addToPlaylist(id){
+  if(playlist.gameIds.length>=playlist.slots){
+    alert(`Playlist ist voll (${playlist.slots}/${playlist.slots}). Entferne erst ein Spiel oder erhöhe die Größe.`);
+    return false;
+  }
+  if(playlist.gameIds.includes(id))return false;
+  playlist.gameIds.push(id);
+  save(games);
+  if(activeTab==='playlist')renderPlaylist();
+  else render(); // refresh playlist marker on tile
+  return true;
+}
+
+function removeFromPlaylist(id){
+  const idx=playlist.gameIds.indexOf(id);
+  if(idx===-1)return;
+  playlist.gameIds.splice(idx,1);
+  save(games);
+  if(activeTab==='playlist')renderPlaylist();
+  else render();
+}
+
+function clearPlaylist(skipConfirm){
+  if(!skipConfirm){
+    if(!confirm('Playlist wirklich leeren? Die Spiele bleiben in deiner Bibliothek.'))return;
+  }
+  playlist.gameIds=[];
+  save(games);
+  renderPlaylist();
+}
+
+function setPlaylistSlots(n){
+  if(![3,4,5].includes(n))return;
+  // If reducing and current count exceeds new size: trim from the end
+  if(playlist.gameIds.length>n){
+    if(!confirm(`Du hast ${playlist.gameIds.length} Spiele in der Playlist. Die letzten ${playlist.gameIds.length-n} werden entfernt. Fortfahren?`))return;
+    playlist.gameIds=playlist.gameIds.slice(0,n);
+  }
+  playlist.slots=n;
+  save(games);
+  document.getElementById('playlistSlotsModal').classList.add('hidden');
+  if(activeTab==='playlist')renderPlaylist();
+}
+
+function openPlaylistSlotsModal(){
+  const warn=document.getElementById('playlistSlotsWarn');
+  if(warn){
+    // show warning if any reduction would lose games
+    warn.style.display='none';
+  }
+  document.getElementById('playlistSlotsModal').classList.remove('hidden');
+}
+
+// ─── Pick game modal ──────────────────────────────────────────────────────
+function openPlaylistPick(){
+  if(playlist.gameIds.length>=playlist.slots){
+    alert(`Playlist ist voll (${playlist.slots}/${playlist.slots}). Entferne erst ein Spiel oder erhöhe die Größe.`);
+    return;
+  }
+  document.getElementById('playlistPickModal').classList.remove('hidden');
+  document.getElementById('playlistPickSearch').value='';
+  renderPlaylistPickList('');
+  setTimeout(()=>document.getElementById('playlistPickSearch').focus(),50);
+}
+
+function renderPlaylistPickList(q){
+  const list=document.getElementById('playlistPickList');
+  const empty=document.getElementById('playlistPickEmpty');
+  const query=(q||'').toLowerCase().trim();
+  const available=games.filter(g=>!playlist.gameIds.includes(g.id) && (!query||g.title.toLowerCase().includes(query)));
+  // sort: backlog/playing first, then others; alphabetically within
+  const order={backlog:0,playing:1,wishlist:2,beaten:3,dropped:4};
+  available.sort((a,b)=>(order[a.status]??9)-(order[b.status]??9)||a.title.localeCompare(b.title,'de'));
+  if(!available.length){
+    list.innerHTML='';
+    empty.style.display='block';
+    return;
+  }
+  empty.style.display='none';
+  list.innerHTML=available.slice(0,80).map(g=>`
+    <div class="rawg-result" onclick="addToPlaylist(${g.id});document.getElementById('playlistPickModal').classList.add('hidden');">
+      <div style="width:36px;height:48px;border-radius:5px;background:var(--surface2);overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;">
+        ${g.coverUrl?`<img src="${esc(g.coverUrl)}" style="width:100%;height:100%;object-fit:cover;" loading="lazy">`:'<span style="font-size:18px;">🎮</span>'}
+      </div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(g.title)}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px;">${STATUS_LABELS[g.status]||g.status}${g.genre?' · '+esc(g.genre):''}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ─── Random fill ──────────────────────────────────────────────────────────
+function openPlaylistRandom(){
+  const free=playlist.slots-playlist.gameIds.length;
+  if(free<=0){
+    alert(`Playlist ist voll (${playlist.slots}/${playlist.slots}). Entferne erst ein Spiel oder erhöhe die Größe.`);
+    return;
+  }
+  // count select
+  const countSel=document.getElementById('playlistRandomCount');
+  countSel.innerHTML='';
+  for(let i=1;i<=free;i++){
+    const opt=document.createElement('option');opt.value=i;opt.textContent=i+(i===1?' Spiel':' Spiele');
+    if(i===free)opt.selected=true;
+    countSel.appendChild(opt);
+  }
+  document.getElementById('playlistRandomPool').value=PLAYLIST_DEFAULT_POOL;
+  updatePlaylistRandomInfo();
+  document.getElementById('playlistRandomModal').classList.remove('hidden');
+}
+
+function getPoolGames(pool){
+  return games.filter(g=>{
+    if(playlist.gameIds.includes(g.id))return false;
+    if(pool==='backlog')return g.status==='backlog';
+    if(pool==='backlog_playing')return g.status==='backlog'||g.status==='playing';
+    if(pool==='all')return g.status!=='beaten'&&g.status!=='dropped';
+    return false;
+  });
+}
+
+function updatePlaylistRandomInfo(){
+  const pool=document.getElementById('playlistRandomPool').value;
+  const candidates=getPoolGames(pool);
+  const info=document.getElementById('playlistRandomInfo');
+  info.textContent=`${candidates.length} ${candidates.length===1?'Spiel':'Spiele'} verfügbar im gewählten Pool.`;
+}
+
+function runPlaylistRandom(){
+  const count=parseInt(document.getElementById('playlistRandomCount').value)||1;
+  const pool=document.getElementById('playlistRandomPool').value;
+  const candidates=getPoolGames(pool);
+  if(!candidates.length){alert('Keine passenden Spiele im gewählten Pool gefunden.');return;}
+  const take=Math.min(count,candidates.length,playlist.slots-playlist.gameIds.length);
+  // Shuffle + take
+  const shuffled=[...candidates].sort(()=>Math.random()-0.5).slice(0,take);
+  shuffled.forEach(g=>playlist.gameIds.push(g.id));
+  save(games);
+  document.getElementById('playlistRandomModal').classList.add('hidden');
+  if(activeTab==='playlist')renderPlaylist();
+  else render();
+}
+
+// ─── Auto-clean: remove playlist entries when status changes to dropped/wishlist
+function autoCleanPlaylist(){
+  const before=playlist.gameIds.length;
+  playlist.gameIds=playlist.gameIds.filter(id=>{
+    const g=games.find(g=>g.id===id);
+    if(!g)return false; // gone
+    if(g.status==='dropped'||g.status==='wishlist')return false;
+    return true;
+  });
+  return playlist.gameIds.length!==before;
 }
 
 // ─── DETAIL MODAL ─────────────────────────────────────────────────────────
@@ -1068,8 +1468,31 @@ function openDetail(id){
       <span>${r.val}</span>
     </div>`).join('');
 
+  // Playlist button state
+  const plBtn=document.getElementById('detailPlaylistBtn');
+  if(plBtn){
+    const inPlaylist=playlist.gameIds.includes(id);
+    if(inPlaylist){
+      plBtn.textContent='✕ Aus Playlist';
+      plBtn.style.background='rgba(251,191,36,0.15)';
+    }else{
+      plBtn.textContent='🎯 Zur Playlist';
+      plBtn.style.background='transparent';
+    }
+  }
+
   document.getElementById('detailModal').classList.remove('hidden');
 }
+
+document.getElementById('detailPlaylistBtn').addEventListener('click',()=>{
+  if(!detailGameId)return;
+  if(playlist.gameIds.includes(detailGameId)){
+    removeFromPlaylist(detailGameId);
+  }else{
+    addToPlaylist(detailGameId);
+  }
+  document.getElementById('detailModal').classList.add('hidden');
+});
 
 document.getElementById('closeDetail').addEventListener('click',()=>document.getElementById('detailModal').classList.add('hidden'));
 document.getElementById('detailModal').addEventListener('click',e=>{if(e.target.id==='detailModal')document.getElementById('detailModal').classList.add('hidden');});
@@ -1082,6 +1505,7 @@ document.getElementById('detailEditBtn').addEventListener('click',()=>{
 document.getElementById('detailDeleteBtn').addEventListener('click',()=>{
   if(!confirm('Spiel wirklich löschen?'))return;
   games=games.filter(g=>g.id!==detailGameId);
+  autoCleanPlaylist();
   save(games);
   document.getElementById('detailModal').classList.add('hidden');
   render();
@@ -1203,7 +1627,7 @@ function clearAddForm(){
 }
 
 // ─── DELETE ───────────────────────────────────────────────────────────────
-function deleteGame(id){if(!confirm('Spiel wirklich löschen?'))return;games=games.filter(g=>g.id!==id);save(games);render();}
+function deleteGame(id){if(!confirm('Spiel wirklich löschen?'))return;games=games.filter(g=>g.id!==id);autoCleanPlaylist();save(games);render();}
 
 // ─── EDIT ─────────────────────────────────────────────────────────────────
 function openEdit(id){
@@ -1242,6 +1666,7 @@ document.getElementById('saveEdit').addEventListener('click',()=>{
   g.isFavorite=document.getElementById('editFavorite').checked;
   g.beatenYears=editYearPicker?editYearPicker.getSelected():[];
   g.notes=document.getElementById('editNotes').value.trim();
+  autoCleanPlaylist();
   save(games);document.getElementById('editModal').classList.add('hidden');render();
 });
 
@@ -1542,7 +1967,10 @@ document.getElementById('saveCloudCreds').addEventListener('click',async()=>{
   if(cloud){
     games=cloud;
     nextId=games.length?Math.max(...games.map(g=>g.id))+1:1;
+    playlist.gameIds=playlist.gameIds.filter(id=>games.some(g=>g.id===id));
+    autoCleanPlaylist();
     saveLocal(games);
+    savePlaylistLocal(playlist);
     render();
   }else{
     // cloud empty → push local up
@@ -1643,6 +2071,15 @@ function selectCover(url){
   setTimeout(()=>document.getElementById('coverPickerModal').classList.add('hidden'),400);
 }
 
+// ─── PLAYLIST EVENT WIRING ────────────────────────────────────────────────
+document.getElementById('playlistAddBtn').addEventListener('click',openPlaylistPick);
+document.getElementById('playlistRandomBtn').addEventListener('click',openPlaylistRandom);
+document.getElementById('playlistSlotsBtn').addEventListener('click',openPlaylistSlotsModal);
+document.getElementById('playlistClearBtn').addEventListener('click',()=>clearPlaylist(false));
+document.getElementById('playlistPickSearch').addEventListener('input',e=>renderPlaylistPickList(e.target.value));
+document.getElementById('playlistRandomPool').addEventListener('change',updatePlaylistRandomInfo);
+document.getElementById('playlistRandomConfirm').addEventListener('click',runPlaylistRandom);
+
 // ─── INIT ─────────────────────────────────────────────────────────────────
 // Force all forms and modals closed on every load
 setAddFormOpen(false);
@@ -1667,7 +2104,11 @@ if(cloudEnabled){
     if(cloud){
       games=cloud;
       nextId=games.length?Math.max(...games.map(g=>g.id))+1:1;
+      // playlist may have been updated by loadCloud; clean stale ids
+      playlist.gameIds=playlist.gameIds.filter(id=>games.some(g=>g.id===id));
+      autoCleanPlaylist();
       saveLocal(games);
+      savePlaylistLocal(playlist);
       render();
     }
   })();
@@ -1683,7 +2124,10 @@ document.addEventListener('visibilitychange',()=>{
       if(cloud){
         games=cloud;
         nextId=games.length?Math.max(...games.map(g=>g.id))+1:1;
+        playlist.gameIds=playlist.gameIds.filter(id=>games.some(g=>g.id===id));
+        autoCleanPlaylist();
         saveLocal(games);
+        savePlaylistLocal(playlist);
         render();
       }
     })();
