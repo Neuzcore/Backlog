@@ -308,7 +308,7 @@
         <input type="file" id="importFile" accept=".json" style="display:none;">
         <label class="hdr-btn" for="csvImportFile" style="background:rgba(124,58,237,0.15);border-color:rgba(124,58,237,0.4);color:#a78bfa;">📋 CSV importieren</label>
         <input type="file" id="csvImportFile" accept=".csv,.txt" style="display:none;">
-        <div style="color:var(--muted);font-size:12px;letter-spacing:1px;">powered by <span class="rawg-badge">RAWG</span> <span style="opacity:0.4;font-size:11px;margin-left:6px;">v1.1.0</span></div>
+        <div style="color:var(--muted);font-size:12px;letter-spacing:1px;">powered by <span class="rawg-badge">RAWG</span> <span style="opacity:0.4;font-size:11px;margin-left:6px;">v1.1.1</span></div>
       </div>
     </div>
   </header>
@@ -929,16 +929,17 @@ function setCloudStatus(s){
   el.style.color=m.c;
 }
 
-let games=loadLocal();
-let nextId=games.length?Math.max(...games.map(g=>g.id))+1:1;
-playlist=loadPlaylistLocal();
-// Clean up playlist: remove ids that no longer exist
-playlist.gameIds=playlist.gameIds.filter(id=>games.some(g=>g.id===id));
 let activeTab='all',searchQuery='',platformFilter='',genreFilter='',yearFilter='',releaseYearFilter='',sortOrder='az';
 // Playlist (Challenge): single playlist with configurable slot count, default pool = backlog
 let playlist={slots:5, gameIds:[], celebrated:false};
 const PLAYLIST_STORAGE_KEY='gamevault_playlist_v1';
 const PLAYLIST_DEFAULT_POOL='backlog';
+
+let games=loadLocal();
+let nextId=games.length?Math.max(...games.map(g=>g.id))+1:1;
+playlist=loadPlaylistLocal();
+// Clean up playlist: remove ids that no longer exist
+playlist.gameIds=playlist.gameIds.filter(id=>games.some(g=>g.id===id));
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
