@@ -81,10 +81,11 @@
   .playlist-slot{background:var(--surface);border:2px dashed var(--border);border-radius:10px;aspect-ratio:3/4;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--muted);font-size:13px;text-align:center;cursor:pointer;transition:all 0.2s;padding:14px;}
   .playlist-slot:hover{border-color:#fbbf24;color:#fbbf24;}
   .playlist-slot .slot-num{font-family:'Orbitron',sans-serif;font-size:22px;color:#fbbf24;opacity:0.4;margin-bottom:4px;}
-  .playlist-card{position:relative;border:2px solid transparent;border-radius:10px;overflow:visible;}
+  .playlist-card{position:relative;border:2px solid transparent;}
   .playlist-card.beaten{border-color:var(--green);box-shadow:0 0 10px rgba(16,185,129,0.3);}
-  .playlist-card-remove{position:absolute;top:-8px;right:-8px;width:24px;height:24px;border-radius:50%;background:var(--red);color:#fff;border:2px solid var(--bg);font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:5;line-height:1;padding:0;}
-  .playlist-card-remove:hover{transform:scale(1.1);}
+  .playlist-card-remove{position:absolute;bottom:6px;right:6px;width:22px;height:22px;border-radius:50%;background:rgba(8,11,20,0.85);color:#fff;border:1px solid rgba(255,255,255,0.25);font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:5;line-height:1;padding:0;opacity:0;transition:opacity 0.18s,background 0.2s,border-color 0.2s;}
+  .playlist-card:hover .playlist-card-remove{opacity:1;}
+  .playlist-card-remove:hover{background:var(--red);border-color:var(--red);}
   .playlist-card-beaten-overlay{position:absolute;top:7px;left:6px;font-size:18px;line-height:1;filter:drop-shadow(0 1px 3px rgba(0,0,0,0.9));pointer-events:none;}
 
   .playlist-empty{text-align:center;padding:32px 20px;color:var(--muted);background:var(--surface);border:1px dashed var(--border);border-radius:10px;}
@@ -308,7 +309,7 @@
         <input type="file" id="importFile" accept=".json" style="display:none;">
         <label class="hdr-btn" for="csvImportFile" style="background:rgba(124,58,237,0.15);border-color:rgba(124,58,237,0.4);color:#a78bfa;">📋 CSV importieren</label>
         <input type="file" id="csvImportFile" accept=".csv,.txt" style="display:none;">
-        <div style="color:var(--muted);font-size:12px;letter-spacing:1px;">powered by <span class="rawg-badge">RAWG</span> <span style="opacity:0.4;font-size:11px;margin-left:6px;">v1.1.1</span></div>
+        <div style="color:var(--muted);font-size:12px;letter-spacing:1px;">powered by <span class="rawg-badge">RAWG</span> <span style="opacity:0.4;font-size:11px;margin-left:6px;">v1.1.2</span></div>
       </div>
     </div>
   </header>
@@ -1125,6 +1126,9 @@ function updateStats(){
     const el=document.getElementById('tc-'+k);
     if(el)el.textContent=v;
   });
+  // playlist tab counter (independent of playlist view)
+  const plEl=document.getElementById('tc-playlist');
+  if(plEl)plEl.textContent=playlist.gameIds.length;
   // filter badge
   const active=[platformFilter,genreFilter,releaseYearFilter,yearFilter].filter(Boolean).length;
   const badge=document.getElementById('filterBadge');
@@ -1253,15 +1257,13 @@ function renderPlaylist(){
         ?`<img class="game-tile-cover" src="${esc(g.coverUrl)}" loading="lazy" onerror="this.style.display='none';this.nextSibling.style.display='flex'"><div class="game-tile-cover-ph" style="display:none;">🎮</div>`
         :`<div class="game-tile-cover-ph">🎮</div>`;
       const beatenOverlay=g.status==='beaten'?'<div class="playlist-card-beaten-overlay" title="Durchgespielt">✅</div>':'';
-      html+=`<div class="game-card playlist-card${g.status==='beaten'?' beaten':''}" data-id="${g.id}">
+      html+=`<div class="game-card playlist-card${g.status==='beaten'?' beaten':''}" data-id="${g.id}" onclick="openDetail(${g.id})">
+        ${coverHtml}
+        <div class="game-tile-status ${dot}" title="${STATUS_LABELS[g.status]||''}"></div>
+        ${beatenOverlay}
+        ${g.isFavorite?`<div class="game-tile-fav" title="Lieblingsspiel" style="top:${g.status==='beaten'?'28px':'5px'};">👑</div>`:''}
+        <div class="game-tile-footer"><div class="game-tile-title">${esc(g.title)}</div></div>
         <button class="playlist-card-remove" title="Aus Playlist entfernen" onclick="event.stopPropagation();removeFromPlaylist(${g.id})">✕</button>
-        <div onclick="openDetail(${g.id})" style="cursor:pointer;">
-          ${coverHtml}
-          <div class="game-tile-status ${dot}" title="${STATUS_LABELS[g.status]||''}"></div>
-          ${beatenOverlay}
-          ${g.isFavorite?`<div class="game-tile-fav" title="Lieblingsspiel" style="top:${g.status==='beaten'?'28px':'5px'};">👑</div>`:''}
-          <div class="game-tile-footer"><div class="game-tile-title">${esc(g.title)}</div></div>
-        </div>
       </div>`;
     }else{
       html+=`<div class="playlist-slot" onclick="openPlaylistPick()">
