@@ -320,7 +320,7 @@
         <input type="file" id="importFile" accept=".json" style="display:none;">
         <label class="hdr-btn" for="csvImportFile" style="background:rgba(124,58,237,0.15);border-color:rgba(124,58,237,0.4);color:#a78bfa;">📋 CSV importieren</label>
         <input type="file" id="csvImportFile" accept=".csv,.txt" style="display:none;">
-        <div style="color:var(--muted);font-size:12px;letter-spacing:1px;">powered by <span class="rawg-badge">RAWG</span> <span style="opacity:0.4;font-size:11px;margin-left:6px;">v1.2.0</span></div>
+        <div style="color:var(--muted);font-size:12px;letter-spacing:1px;">powered by <span class="rawg-badge">RAWG</span> <span style="opacity:0.4;font-size:11px;margin-left:6px;">v1.2.1</span></div>
       </div>
     </div>
   </header>
@@ -411,8 +411,13 @@
         <select id="sortSelect">
           <option value="az" selected>A → Z</option>
           <option value="za">Z → A</option>
-          <option value="rating">Bewertung</option>
-          <option value="added">Zuletzt hinzugefügt</option>
+          <option value="ratingDesc">Bewertung ↓ (hoch → niedrig)</option>
+          <option value="ratingAsc">Bewertung ↑ (niedrig → hoch)</option>
+          <option value="releaseDesc">Erscheinungsjahr ↓ (neu → alt)</option>
+          <option value="releaseAsc">Erscheinungsjahr ↑ (alt → neu)</option>
+          <option value="addedDesc">Zuletzt hinzugefügt</option>
+          <option value="addedAsc">Zuerst hinzugefügt</option>
+          <option value="playsDesc">Spielzahl ↓ (oft → selten)</option>
         </select>
       </div>
       <div class="fp-group" style="display:flex;align-items:flex-end;">
@@ -1142,9 +1147,35 @@ function getFiltered(){
       &&(!yearFilter||years.includes(yearFilter))
       &&(!releaseYearFilter||String(g.releaseYear||'')=== releaseYearFilter);
   });
-  if(sortOrder==='az') result=[...result].sort((a,b)=>a.title.localeCompare(b.title,'de'));
-  if(sortOrder==='za') result=[...result].sort((a,b)=>b.title.localeCompare(a.title,'de'));
+  result=sortGames(result, sortOrder);
   return result;
+}
+
+// Comparator that pushes null/undefined values to the end regardless of direction
+function sortGames(arr, order){
+  const titleAsc=(a,b)=>a.title.localeCompare(b.title,'de');
+  // Helper: numeric compare where null/undefined always go last
+  const numCmp=(a,b,dir)=>{
+    const av=a===null||a===undefined||Number.isNaN(a);
+    const bv=b===null||b===undefined||Number.isNaN(b);
+    if(av&&bv)return 0;
+    if(av)return 1;     // missing → bottom
+    if(bv)return -1;    // missing → bottom
+    return dir==='desc'?(b-a):(a-b);
+  };
+  const sorters={
+    az:        (a,b)=>titleAsc(a,b),
+    za:        (a,b)=>-titleAsc(a,b),
+    ratingDesc:(a,b)=>numCmp(a.rating,b.rating,'desc')||titleAsc(a,b),
+    ratingAsc: (a,b)=>numCmp(a.rating,b.rating,'asc') ||titleAsc(a,b),
+    releaseDesc:(a,b)=>numCmp(a.releaseYear,b.releaseYear,'desc')||titleAsc(a,b),
+    releaseAsc: (a,b)=>numCmp(a.releaseYear,b.releaseYear,'asc') ||titleAsc(a,b),
+    addedDesc: (a,b)=>(b.id-a.id),  // higher id = added later
+    addedAsc:  (a,b)=>(a.id-b.id),
+    playsDesc: (a,b)=>numCmp(a.plays||0,b.plays||0,'desc')||titleAsc(a,b),
+  };
+  const cmp=sorters[order]||sorters.az;
+  return [...arr].sort(cmp);
 }
 
 function updateYearFilter(){
