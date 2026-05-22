@@ -320,7 +320,7 @@
         <input type="file" id="importFile" accept=".json" style="display:none;">
         <label class="hdr-btn" for="csvImportFile" style="background:rgba(124,58,237,0.15);border-color:rgba(124,58,237,0.4);color:#a78bfa;">📋 CSV importieren</label>
         <input type="file" id="csvImportFile" accept=".csv,.txt" style="display:none;">
-        <div style="color:var(--muted);font-size:12px;letter-spacing:1px;">powered by <span class="rawg-badge">RAWG</span> <span style="opacity:0.4;font-size:11px;margin-left:6px;">v1.2.2</span></div>
+        <div style="color:var(--muted);font-size:12px;letter-spacing:1px;">powered by <span class="rawg-badge">RAWG</span> <span style="opacity:0.4;font-size:11px;margin-left:6px;">v1.2.4</span></div>
       </div>
     </div>
   </header>
@@ -383,19 +383,12 @@
       <div class="fp-group">        <label>Plattform</label>
         <select id="platformFilter">
           <option value="">Alle Plattformen</option>
-          <optgroup label="PC Launcher"><option>Steam</option><option>GOG</option><option>Epic Games Store</option><option>EA App</option><option>Ubisoft Connect</option><option>Battle.net</option><option>Xbox PC / Game Pass</option><option>PlayStation PC</option></optgroup>
-          <optgroup label="PC / Sonstige"><option>PC</option><option>Mac</option><option>Mobile</option><option>Emulator</option><option>Sonstige</option></optgroup>
-          <optgroup label="PlayStation"><option>PlayStation 2</option><option>PlayStation 3</option><option>PlayStation 4</option><option>PlayStation 5</option><option>PSP</option><option>PS Vita</option></optgroup>
-          <optgroup label="Xbox"><option>Xbox</option><option>Xbox 360</option><option>Xbox One</option><option>Xbox Series X/S</option></optgroup>
-          <optgroup label="Nintendo"><option>Nintendo 64</option><option>GameCube</option><option>Wii</option><option>Wii U</option><option>Nintendo Switch</option><option>Nintendo Switch 2</option><option>Game Boy / GBA</option><option>Nintendo DS</option><option>Nintendo 3DS</option></optgroup>
-          <optgroup label="SEGA"><option>SEGA Mega Drive</option><option>SEGA Saturn</option><option>SEGA Dreamcast</option></optgroup>
         </select>
       </div>
       <div class="fp-group">
         <label>Genre</label>
         <select id="genreFilter">
           <option value="">Alle Genres</option>
-          <option>Action</option><option>Action-Adventure</option><option>RPG</option><option>Adventure</option><option>Soulslike</option><option>Metroidvania</option><option>Strategie</option><option>Shooter</option><option>Platformer</option><option>Horror</option><option>Simulation</option><option>Sport</option><option>Rennspiel</option><option>Puzzle</option><option>Sonstige</option>
         </select>
       </div>
       <div class="fp-group">
@@ -1142,8 +1135,8 @@ function getFiltered(){
     const years=Array.isArray(g.beatenYears)?g.beatenYears:[];
     return(activeTab==='all'||g.status===activeTab)
       &&(!searchQuery||g.title.toLowerCase().includes(searchQuery.toLowerCase()))
-      &&(!platformFilter||plats.includes(platformFilter))
-      &&(!genreFilter||g.genre===genreFilter)
+      &&(!platformFilter||(platformFilter==='__none__'?plats.length===0:plats.includes(platformFilter)))
+      &&(!genreFilter||(genreFilter==='__none__'?!g.genre:g.genre===genreFilter))
       &&(!yearFilter||years.includes(yearFilter))
       &&(!releaseYearFilter||String(g.releaseYear||'')=== releaseYearFilter);
   });
@@ -1192,6 +1185,48 @@ function updateYearFilter(){
   const ryears=[...new Set(games.map(g=>g.releaseYear).filter(Boolean))].sort((a,b)=>b-a);
   rsel.innerHTML='<option value="">Alle Erscheinungsjahre</option>'+ryears.map(y=>`<option value="${y}">${y}</option>`).join('');
   if(ryears.includes(parseInt(rcur))) rsel.value=rcur;
+
+  // Plattformen — sortiert nach Häufigkeit (am häufigsten oben)
+  const psel=document.getElementById('platformFilter');
+  if(psel){
+    const pcur=psel.value;
+    const platCounts={};
+    let platNone=0;
+    games.forEach(g=>{
+      const ps=getPlatforms(g);
+      if(!ps.length){platNone++;return;}
+      ps.forEach(p=>{if(p)platCounts[p]=(platCounts[p]||0)+1;});
+    });
+    const platsSorted=Object.entries(platCounts).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0],'de'));
+    let html='<option value="">Alle Plattformen</option>'+
+      platsSorted.map(([p,n])=>`<option value="${esc(p)}">${esc(p)} (${n})</option>`).join('');
+    if(platNone>0) html+=`<option value="__none__">Ohne Plattform (${platNone})</option>`;
+    psel.innerHTML=html;
+    // restore selection if still valid
+    if(pcur==='__none__' && platNone>0) psel.value='__none__';
+    else if(platsSorted.some(([p])=>p===pcur)) psel.value=pcur;
+    else psel.value='';
+  }
+
+  // Genres — sortiert nach Häufigkeit
+  const gsel=document.getElementById('genreFilter');
+  if(gsel){
+    const gcur=gsel.value;
+    const genreCounts={};
+    let genreNone=0;
+    games.forEach(g=>{
+      if(!g.genre)genreNone++;
+      else genreCounts[g.genre]=(genreCounts[g.genre]||0)+1;
+    });
+    const genresSorted=Object.entries(genreCounts).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0],'de'));
+    let ghtml='<option value="">Alle Genres</option>'+
+      genresSorted.map(([g,n])=>`<option value="${esc(g)}">${esc(g)} (${n})</option>`).join('');
+    if(genreNone>0) ghtml+=`<option value="__none__">Ohne Genre (${genreNone})</option>`;
+    gsel.innerHTML=ghtml;
+    if(gcur==='__none__' && genreNone>0) gsel.value='__none__';
+    else if(genresSorted.some(([g])=>g===gcur)) gsel.value=gcur;
+    else gsel.value='';
+  }
 }
 
 function updateStats(){
