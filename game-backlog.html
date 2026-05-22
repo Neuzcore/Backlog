@@ -320,7 +320,7 @@
         <input type="file" id="importFile" accept=".json" style="display:none;">
         <label class="hdr-btn" for="csvImportFile" style="background:rgba(124,58,237,0.15);border-color:rgba(124,58,237,0.4);color:#a78bfa;">📋 CSV importieren</label>
         <input type="file" id="csvImportFile" accept=".csv,.txt" style="display:none;">
-        <div style="color:var(--muted);font-size:12px;letter-spacing:1px;">powered by <span class="rawg-badge">RAWG</span> <span style="opacity:0.4;font-size:11px;margin-left:6px;">v1.2.1</span></div>
+        <div style="color:var(--muted);font-size:12px;letter-spacing:1px;">powered by <span class="rawg-badge">RAWG</span> <span style="opacity:0.4;font-size:11px;margin-left:6px;">v1.2.2</span></div>
       </div>
     </div>
   </header>
@@ -1495,14 +1495,24 @@ function updatePlaylistRandomInfo(){
   info.textContent=`${candidates.length} ${candidates.length===1?'Spiel':'Spiele'} verfügbar im gewählten Pool.`;
 }
 
+// Fisher-Yates shuffle — produces a uniform random permutation
+function shuffleArray(arr){
+  const a=[...arr];
+  for(let i=a.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+
 function runPlaylistRandom(){
   const count=parseInt(document.getElementById('playlistRandomCount').value)||1;
   const pool=document.getElementById('playlistRandomPool').value;
   const candidates=getPoolGames(pool);
   if(!candidates.length){alert('Keine passenden Spiele im gewählten Pool gefunden.');return;}
   const take=Math.min(count,candidates.length,playlist.slots-playlist.gameIds.length);
-  // Shuffle + take
-  const shuffled=[...candidates].sort(()=>Math.random()-0.5).slice(0,take);
+  // Proper uniform shuffle, then take the first N
+  const shuffled=shuffleArray(candidates).slice(0,take);
   shuffled.forEach(g=>playlist.gameIds.push(g.id));
   save(games);
   document.getElementById('playlistRandomModal').classList.add('hidden');
