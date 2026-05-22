@@ -100,6 +100,17 @@
   /* If both favorite and playlist: stack vertically */
   .game-tile-playlist + .game-tile-fav, .game-card:has(.game-tile-playlist) .game-tile-fav{top:24px;}
 
+  /* Challenge journal */
+  .journal-entry{background:var(--surface);border:1px solid var(--border);border-left:3px solid #fbbf24;border-radius:8px;padding:14px;}
+  .journal-entry-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:12px;}
+  .journal-entry-date{font-family:'Orbitron',sans-serif;font-size:13px;letter-spacing:1px;color:#fbbf24;text-transform:uppercase;}
+  .journal-entry-sub{font-size:12px;color:var(--muted);margin-top:2px;}
+  .journal-games{display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:10px;}
+  .journal-game{display:flex;flex-direction:column;gap:4px;text-align:center;font-size:11px;}
+  .journal-game img{width:100%;aspect-ratio:2/3;object-fit:cover;border-radius:6px;border:1px solid var(--border);}
+  .journal-game-ph{width:100%;aspect-ratio:2/3;background:var(--surface2);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:22px;border:1px solid var(--border);}
+  .journal-game-title{color:var(--text);font-weight:600;line-height:1.2;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+
   /* TOOLBAR — kept for legacy, filter-bar replaces it */
   .toolbar{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap;align-items:center;}
   .search-wrap{position:relative;}
@@ -309,7 +320,7 @@
         <input type="file" id="importFile" accept=".json" style="display:none;">
         <label class="hdr-btn" for="csvImportFile" style="background:rgba(124,58,237,0.15);border-color:rgba(124,58,237,0.4);color:#a78bfa;">📋 CSV importieren</label>
         <input type="file" id="csvImportFile" accept=".csv,.txt" style="display:none;">
-        <div style="color:var(--muted);font-size:12px;letter-spacing:1px;">powered by <span class="rawg-badge">RAWG</span> <span style="opacity:0.4;font-size:11px;margin-left:6px;">v1.1.2</span></div>
+        <div style="color:var(--muted);font-size:12px;letter-spacing:1px;">powered by <span class="rawg-badge">RAWG</span> <span style="opacity:0.4;font-size:11px;margin-left:6px;">v1.2.0</span></div>
       </div>
     </div>
   </header>
@@ -509,6 +520,7 @@
         <button class="playlist-btn" id="playlistRandomBtn">🎲 Zufall</button>
         <button class="playlist-btn" id="playlistSlotsBtn">✏️ Größe</button>
         <button class="playlist-btn danger" id="playlistClearBtn">🗑 Leeren</button>
+        <button class="playlist-btn" id="playlistJournalBtn">📔 Tagebuch <span id="journalCountBadge" style="background:rgba(251,191,36,0.2);color:#fbbf24;padding:1px 7px;border-radius:8px;font-size:11px;margin-left:4px;">0</span></button>
       </div>
     </div>
     <div id="challengeCompleteBanner"></div>
@@ -741,6 +753,17 @@
   </div>
 </div>
 
+<!-- CHALLENGE JOURNAL -->
+<div class="modal-overlay hidden" id="journalModal">
+  <div class="modal" style="max-width:620px;">
+    <button class="modal-close" onclick="document.getElementById('journalModal').classList.add('hidden')">✕</button>
+    <div class="modal-title">📔 Challenge-Tagebuch</div>
+    <p style="color:var(--muted);font-size:13px;margin-bottom:14px;">Erfolgreich beendet: <b id="journalCount" style="color:#fbbf24;font-size:18px;">0</b></p>
+    <div id="journalList" style="max-height:60vh;overflow-y:auto;display:flex;flex-direction:column;gap:14px;"></div>
+    <p id="journalEmpty" style="color:var(--muted);font-size:13px;text-align:center;padding:20px;display:none;">Noch keine abgeschlossenen Challenges. Schaffe deine erste Playlist und sie landet hier!</p>
+  </div>
+</div>
+
 <script>
 
 // Open/close add form via single .open class (CSS handles all visibility)
@@ -856,10 +879,23 @@ function savePlaylistLocal(p){
   try{ localStorage.setItem(PLAYLIST_STORAGE_KEY,JSON.stringify(p)); }catch(e){}
 }
 
+function loadJournalLocal(){
+  try{
+    const r=localStorage.getItem(JOURNAL_STORAGE_KEY);
+    if(!r) return [];
+    const j=JSON.parse(r);
+    return Array.isArray(j)?j:[];
+  }catch{return [];}
+}
+function saveJournalLocal(j){
+  try{ localStorage.setItem(JOURNAL_STORAGE_KEY,JSON.stringify(j)); }catch(e){}
+}
+
 // Save = local immediately + cloud (debounced)
 function save(g){
   saveLocal(g);
   savePlaylistLocal(playlist);
+  saveJournalLocal(challengeJournal);
   if(!cloudEnabled) return;
   clearTimeout(saveDebounce);
   saveDebounce=setTimeout(()=>saveCloud(g),800);
@@ -872,7 +908,7 @@ async function saveCloud(g){
     const res=await fetch(JSONBIN_URL,{
       method:'PUT',
       headers:{'Content-Type':'application/json','X-Master-Key':JSONBIN_KEY},
-      body:JSON.stringify({games:g, playlist:playlist}),
+      body:JSON.stringify({games:g, playlist:playlist, journal:challengeJournal}),
       signal:AbortSignal.timeout(10000),
     });
     if(!res.ok) throw new Error('save failed '+res.status);
@@ -899,6 +935,11 @@ async function loadCloud(){
       const p=record.playlist;
       playlist={slots:[3,4,5].includes(p.slots)?p.slots:5, gameIds:Array.isArray(p.gameIds)?p.gameIds:[], celebrated:!!p.celebrated};
       savePlaylistLocal(playlist);
+    }
+    // Pull challenge journal if present
+    if(record && Array.isArray(record.journal)){
+      challengeJournal=record.journal;
+      saveJournalLocal(challengeJournal);
     }
     setCloudStatus('ok');
     if(cloudGames && cloudGames.length){
@@ -935,12 +976,16 @@ let activeTab='all',searchQuery='',platformFilter='',genreFilter='',yearFilter='
 let playlist={slots:5, gameIds:[], celebrated:false};
 const PLAYLIST_STORAGE_KEY='gamevault_playlist_v1';
 const PLAYLIST_DEFAULT_POOL='backlog';
+// Challenge journal: archive of completed challenges
+let challengeJournal=[]; // array of {id, completedAt (ISO date), slots, games:[{id,title,coverUrl}]}
+const JOURNAL_STORAGE_KEY='gamevault_journal_v1';
 
 let games=loadLocal();
 let nextId=games.length?Math.max(...games.map(g=>g.id))+1:1;
 playlist=loadPlaylistLocal();
 // Clean up playlist: remove ids that no longer exist
 playlist.gameIds=playlist.gameIds.filter(id=>games.some(g=>g.id===id));
+challengeJournal=loadJournalLocal();
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
@@ -1301,10 +1346,24 @@ function removeFromPlaylist(id){
 function clearPlaylist(skipConfirm){
   if(!skipConfirm){
     if(!confirm('Playlist wirklich leeren? Die Spiele bleiben in deiner Bibliothek.'))return;
+  }else{
+    // skipConfirm=true is called from the "Neue Challenge starten" button after a completed challenge
+    // Archive it to the journal first
+    const items=getPlaylistGames();
+    const allBeaten=items.length===playlist.slots && items.length>0 && items.every(g=>g.status==='beaten');
+    if(allBeaten){
+      challengeJournal.unshift({
+        id:'ch_'+Date.now(),
+        completedAt:new Date().toISOString(),
+        slots:playlist.slots,
+        games:items.map(g=>({id:g.id, title:g.title, coverUrl:g.coverUrl||''})),
+      });
+    }
   }
   playlist.gameIds=[];
   save(games);
   renderPlaylist();
+  updateJournalBadge();
 }
 
 function setPlaylistSlots(n){
@@ -1430,6 +1489,64 @@ function autoCleanPlaylist(){
     return true;
   });
   return playlist.gameIds.length!==before;
+}
+
+// ─── Challenge Journal ────────────────────────────────────────────────────
+function updateJournalBadge(){
+  const badge=document.getElementById('journalCountBadge');
+  if(badge)badge.textContent=challengeJournal.length;
+}
+
+function formatJournalDate(iso){
+  try{
+    const d=new Date(iso);
+    return d.toLocaleDateString('de-DE',{year:'numeric',month:'long',day:'numeric'});
+  }catch{return iso;}
+}
+
+function openJournalModal(){
+  renderJournal();
+  document.getElementById('journalModal').classList.remove('hidden');
+}
+
+function renderJournal(){
+  const list=document.getElementById('journalList');
+  const empty=document.getElementById('journalEmpty');
+  const count=document.getElementById('journalCount');
+  if(count)count.textContent=challengeJournal.length;
+  if(!challengeJournal.length){
+    list.innerHTML='';
+    empty.style.display='block';
+    return;
+  }
+  empty.style.display='none';
+  list.innerHTML=challengeJournal.map(entry=>{
+    const tiles=entry.games.map(g=>`
+      <div class="journal-game" title="${esc(g.title)}">
+        ${g.coverUrl?`<img src="${esc(g.coverUrl)}" loading="lazy">`:'<div class="journal-game-ph">🎮</div>'}
+        <div class="journal-game-title">${esc(g.title)}</div>
+      </div>
+    `).join('');
+    return`<div class="journal-entry">
+      <div class="journal-entry-head">
+        <div>
+          <div class="journal-entry-date">📅 ${formatJournalDate(entry.completedAt)}</div>
+          <div class="journal-entry-sub">${entry.games.length} ${entry.games.length===1?'Spiel':'Spiele'} durchgespielt</div>
+        </div>
+        <button class="playlist-btn danger" title="Eintrag löschen" onclick="deleteJournalEntry('${esc(entry.id)}')">🗑</button>
+      </div>
+      <div class="journal-games">${tiles}</div>
+    </div>`;
+  }).join('');
+}
+
+function deleteJournalEntry(id){
+  if(!confirm('Diesen Tagebuch-Eintrag wirklich löschen?'))return;
+  challengeJournal=challengeJournal.filter(e=>e.id!==id);
+  saveJournalLocal(challengeJournal);
+  if(cloudEnabled){clearTimeout(saveDebounce);saveDebounce=setTimeout(()=>saveCloud(games),800);}
+  renderJournal();
+  updateJournalBadge();
 }
 
 // ─── DETAIL MODAL ─────────────────────────────────────────────────────────
@@ -1791,7 +1908,7 @@ document.getElementById('sortSelect').addEventListener('change',e=>{sortOrder=e.
 
 // ─── EXPORT / IMPORT ──────────────────────────────────────────────────────
 document.getElementById('exportBtn').addEventListener('click',()=>{
-  const data=JSON.stringify({version:4,exported:new Date().toISOString(),games},null,2);
+  const data=JSON.stringify({version:5,exported:new Date().toISOString(),games,playlist,journal:challengeJournal},null,2);
   const blob=new Blob([data],{type:'application/json'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
@@ -1810,7 +1927,19 @@ document.getElementById('importFile').addEventListener('change',function(){
       const migrated=migrate(imported);
       if(!confirm(`${migrated.length} Spiele importieren? Deine aktuelle Liste wird ersetzt.`))return;
       games=migrated;nextId=games.length?Math.max(...games.map(g=>g.id))+1:1;
-      save(games);render();alert(`✅ ${migrated.length} Spiele importiert!`);
+      // Restore playlist if present in backup
+      if(parsed && parsed.playlist && typeof parsed.playlist==='object'){
+        const p=parsed.playlist;
+        playlist={slots:[3,4,5].includes(p.slots)?p.slots:5, gameIds:Array.isArray(p.gameIds)?p.gameIds:[], celebrated:!!p.celebrated};
+        // Drop stale ids
+        playlist.gameIds=playlist.gameIds.filter(id=>games.some(g=>g.id===id));
+      }
+      // Restore journal if present in backup
+      if(parsed && Array.isArray(parsed.journal)){
+        challengeJournal=parsed.journal;
+      }
+      save(games);render();updateJournalBadge();
+      alert(`✅ ${migrated.length} Spiele importiert!`);
     }catch{alert('❌ Ungültige Datei.');}
   };
   reader.readAsText(file);this.value='';
@@ -2079,6 +2208,7 @@ document.getElementById('playlistAddBtn').addEventListener('click',openPlaylistP
 document.getElementById('playlistRandomBtn').addEventListener('click',openPlaylistRandom);
 document.getElementById('playlistSlotsBtn').addEventListener('click',openPlaylistSlotsModal);
 document.getElementById('playlistClearBtn').addEventListener('click',()=>clearPlaylist(false));
+document.getElementById('playlistJournalBtn').addEventListener('click',openJournalModal);
 document.getElementById('playlistPickSearch').addEventListener('input',e=>renderPlaylistPickList(e.target.value));
 document.getElementById('playlistRandomPool').addEventListener('change',updatePlaylistRandomInfo);
 document.getElementById('playlistRandomConfirm').addEventListener('click',runPlaylistRandom);
@@ -2086,7 +2216,7 @@ document.getElementById('playlistRandomConfirm').addEventListener('click',runPla
 // ─── INIT ─────────────────────────────────────────────────────────────────
 // Force all forms and modals closed on every load
 setAddFormOpen(false);
-['cloudModal','coverPickerModal','randomModal','editModal','detailModal'].forEach(id=>{
+['cloudModal','coverPickerModal','randomModal','editModal','detailModal','journalModal','playlistSlotsModal','playlistPickModal','playlistRandomModal'].forEach(id=>{
   const el=document.getElementById(id);
   if(el)el.classList.add('hidden');
 });
@@ -2097,6 +2227,7 @@ newYearPicker=buildYearPicker('newYearPicker','newYearInput','newYearDrop',[]);
 editYearPicker=buildYearPicker('editYearPicker','editYearInput','editYearDrop',[]);
 
 render(); // show local data immediately
+updateJournalBadge();
 
 loadCloudCreds(); // try to restore saved credentials
 
@@ -2112,7 +2243,9 @@ if(cloudEnabled){
       autoCleanPlaylist();
       saveLocal(games);
       savePlaylistLocal(playlist);
+      saveJournalLocal(challengeJournal);
       render();
+      updateJournalBadge();
     }
   })();
 }else{
@@ -2131,7 +2264,9 @@ document.addEventListener('visibilitychange',()=>{
         autoCleanPlaylist();
         saveLocal(games);
         savePlaylistLocal(playlist);
+        saveJournalLocal(challengeJournal);
         render();
+        updateJournalBadge();
       }
     })();
   }
