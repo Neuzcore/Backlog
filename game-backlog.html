@@ -70,30 +70,22 @@
   .playlist-btn.primary:hover{background:#f59e0b;border-color:#f59e0b;color:var(--bg);}
   .playlist-btn.danger:hover{border-color:var(--red);color:var(--red);}
 
-  .playlist-progress-wrap{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:18px;}
-  .playlist-progress-info{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;font-size:14px;}
-  .playlist-progress-info b{color:#fbbf24;font-size:18px;}
-  .playlist-progress-info .pct{color:var(--muted);font-size:13px;}
-  .playlist-progress-bar{height:10px;background:var(--surface2);border-radius:5px;overflow:hidden;border:1px solid var(--border);}
-  .playlist-progress-fill{height:100%;background:linear-gradient(90deg,#fbbf24,#f59e0b);border-radius:5px;transition:width 0.4s ease;box-shadow:0 0 8px rgba(251,191,36,0.5);}
-
   .playlist-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;}
   .playlist-slot{background:var(--surface);border:2px dashed var(--border);border-radius:10px;aspect-ratio:3/4;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--muted);font-size:13px;text-align:center;cursor:pointer;transition:all 0.2s;padding:14px;}
   .playlist-slot:hover{border-color:#fbbf24;color:#fbbf24;}
   .playlist-slot .slot-num{font-family:'Orbitron',sans-serif;font-size:22px;color:#fbbf24;opacity:0.4;margin-bottom:4px;}
-  .playlist-card{position:relative;border:2px solid transparent;}
-  .playlist-card.beaten{border-color:var(--green);box-shadow:0 0 10px rgba(16,185,129,0.3);}
+  .playlist-card{position:relative;border:2px solid transparent;cursor:grab;}
+  .playlist-card:active{cursor:grabbing;}
+  .playlist-card.dragging{opacity:0.5;transform:scale(0.96);transition:transform 0.15s;}
+  .playlist-card.drag-over{border-color:#fbbf24;box-shadow:0 0 14px rgba(251,191,36,0.55);}
+  .playlist-order-badge{position:absolute;top:6px;right:6px;width:24px;height:24px;border-radius:50%;background:#fbbf24;color:var(--bg);font-family:'Orbitron',sans-serif;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;z-index:4;border:2px solid var(--bg);box-shadow:0 0 6px rgba(251,191,36,0.5);pointer-events:none;}
+  .playlist-card .game-tile-status{display:none;}
   .playlist-card-remove{position:absolute;bottom:6px;right:6px;width:22px;height:22px;border-radius:50%;background:rgba(8,11,20,0.85);color:#fff;border:1px solid rgba(255,255,255,0.25);font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:5;line-height:1;padding:0;opacity:0;transition:opacity 0.18s,background 0.2s,border-color 0.2s;}
   .playlist-card:hover .playlist-card-remove{opacity:1;}
   .playlist-card-remove:hover{background:var(--red);border-color:var(--red);}
-  .playlist-card-beaten-overlay{position:absolute;top:7px;left:6px;font-size:18px;line-height:1;filter:drop-shadow(0 1px 3px rgba(0,0,0,0.9));pointer-events:none;}
 
   .playlist-empty{text-align:center;padding:32px 20px;color:var(--muted);background:var(--surface);border:1px dashed var(--border);border-radius:10px;}
   .playlist-empty .emoji{font-size:36px;margin-bottom:8px;}
-
-  .challenge-complete{background:linear-gradient(135deg,rgba(251,191,36,0.15),rgba(245,158,11,0.08));border:2px solid #fbbf24;border-radius:12px;padding:24px;text-align:center;margin-bottom:18px;box-shadow:0 0 20px rgba(251,191,36,0.2);}
-  .challenge-complete h2{font-family:'Orbitron',sans-serif;color:#fbbf24;font-size:22px;letter-spacing:3px;margin-bottom:8px;}
-  .challenge-complete p{color:var(--text);margin-bottom:14px;}
 
   /* Playlist target marker on regular tiles */
   .game-tile-playlist{position:absolute;top:5px;left:6px;font-size:15px;line-height:1;filter:drop-shadow(0 1px 3px rgba(0,0,0,0.9));pointer-events:none;}
@@ -101,15 +93,6 @@
   .game-tile-playlist + .game-tile-fav, .game-card:has(.game-tile-playlist) .game-tile-fav{top:24px;}
 
   /* Challenge journal */
-  .journal-entry{background:var(--surface);border:1px solid var(--border);border-left:3px solid #fbbf24;border-radius:8px;padding:14px;}
-  .journal-entry-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:12px;}
-  .journal-entry-date{font-family:'Orbitron',sans-serif;font-size:13px;letter-spacing:1px;color:#fbbf24;text-transform:uppercase;}
-  .journal-entry-sub{font-size:12px;color:var(--muted);margin-top:2px;}
-  .journal-games{display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:10px;}
-  .journal-game{display:flex;flex-direction:column;gap:4px;text-align:center;font-size:11px;}
-  .journal-game img{width:100%;aspect-ratio:2/3;object-fit:cover;border-radius:6px;border:1px solid var(--border);}
-  .journal-game-ph{width:100%;aspect-ratio:2/3;background:var(--surface2);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:22px;border:1px solid var(--border);}
-  .journal-game-title{color:var(--text);font-weight:600;line-height:1.2;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
 
   /* TOOLBAR — kept for legacy, filter-bar replaces it */
   .toolbar{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap;align-items:center;}
@@ -320,7 +303,7 @@
         <input type="file" id="importFile" accept=".json" style="display:none;">
         <label class="hdr-btn" for="csvImportFile" style="background:rgba(124,58,237,0.15);border-color:rgba(124,58,237,0.4);color:#a78bfa;">📋 CSV importieren</label>
         <input type="file" id="csvImportFile" accept=".csv,.txt" style="display:none;">
-        <div style="color:var(--muted);font-size:12px;letter-spacing:1px;">powered by <span class="rawg-badge">RAWG</span> <span style="opacity:0.4;font-size:11px;margin-left:6px;">v1.2.4</span></div>
+        <div style="color:var(--muted);font-size:12px;letter-spacing:1px;">powered by <span class="rawg-badge">RAWG</span> <span style="opacity:0.4;font-size:11px;margin-left:6px;">v1.3.0</span></div>
       </div>
     </div>
   </header>
@@ -361,7 +344,7 @@
     <button class="tab" data-tab="beaten">Durchgespielt <span class="tab-count" id="tc-beaten">0</span></button>
     <button class="tab" data-tab="wishlist">Wunschliste <span class="tab-count" id="tc-wishlist">0</span></button>
     <button class="tab" data-tab="dropped">Abgebrochen <span class="tab-count" id="tc-dropped">0</span></button>
-    <button class="tab" data-tab="playlist">🎯 Playlist <span class="tab-count" id="tc-playlist">0</span></button>
+    <button class="tab" data-tab="playlist">🎯 Als Nächstes <span class="tab-count" id="tc-playlist">0</span></button>
   </div>
 
   <div class="filter-bar">
@@ -512,23 +495,14 @@
 
   <div class="playlist-section" id="playlistSection" style="display:none;">
     <div class="playlist-header">
-      <div class="playlist-title">🎯 Meine Challenge</div>
+      <div class="playlist-title">🎯 Als Nächstes spielen</div>
       <div class="playlist-actions">
         <button class="playlist-btn primary" id="playlistAddBtn">＋ Spiel</button>
         <button class="playlist-btn" id="playlistRandomBtn">🎲 Zufall</button>
-        <button class="playlist-btn" id="playlistSlotsBtn">✏️ Größe</button>
         <button class="playlist-btn danger" id="playlistClearBtn">🗑 Leeren</button>
-        <button class="playlist-btn" id="playlistJournalBtn">📔 Tagebuch <span id="journalCountBadge" style="background:rgba(251,191,36,0.2);color:#fbbf24;padding:1px 7px;border-radius:8px;font-size:11px;margin-left:4px;">0</span></button>
       </div>
     </div>
-    <div id="challengeCompleteBanner"></div>
-    <div class="playlist-progress-wrap">
-      <div class="playlist-progress-info">
-        <span><b id="playlistProgressDone">0</b> / <span id="playlistProgressTotal">0</span> durchgespielt</span>
-        <span class="pct" id="playlistProgressPct">0%</span>
-      </div>
-      <div class="playlist-progress-bar"><div class="playlist-progress-fill" id="playlistProgressFill" style="width:0%;"></div></div>
-    </div>
+    <p style="color:var(--muted);font-size:12px;margin:-6px 0 14px 0;">Tipp: Kacheln per Drag &amp; Drop umsortieren.</p>
     <div class="playlist-grid" id="playlistGrid"></div>
   </div>
 
@@ -691,25 +665,10 @@
     <div class="detail-meta" id="detailMeta"></div>
     <div id="detailRows"></div>
     <div class="detail-actions">
-      <button class="btn btn-ghost" id="detailPlaylistBtn" style="flex:1;border-color:#fbbf24;color:#fbbf24;">🎯 Playlist</button>
+      <button class="btn btn-ghost" id="detailPlaylistBtn" style="flex:1;border-color:#fbbf24;color:#fbbf24;">🎯 Liste</button>
       <button class="btn btn-primary" id="detailEditBtn" style="flex:1;">✏️ Bearbeiten</button>
       <button class="btn btn-ghost" id="detailDeleteBtn" style="flex:1;color:var(--red);border-color:var(--red);">🗑 Löschen</button>
     </div>
-  </div>
-</div>
-
-<!-- PLAYLIST: SLOT COUNT PICKER -->
-<div class="modal-overlay hidden" id="playlistSlotsModal">
-  <div class="modal" style="max-width:380px;">
-    <button class="modal-close" onclick="document.getElementById('playlistSlotsModal').classList.add('hidden')">✕</button>
-    <div class="modal-title">🎯 Playlist-Größe</div>
-    <p style="color:var(--muted);font-size:13px;margin-bottom:14px;">Wie viele Spiele soll deine Challenge haben?</p>
-    <div style="display:flex;gap:10px;justify-content:center;margin-bottom:14px;">
-      <button class="playlist-btn" data-slots="3" onclick="setPlaylistSlots(3)">3 Spiele</button>
-      <button class="playlist-btn" data-slots="4" onclick="setPlaylistSlots(4)">4 Spiele</button>
-      <button class="playlist-btn" data-slots="5" onclick="setPlaylistSlots(5)">5 Spiele</button>
-    </div>
-    <p id="playlistSlotsWarn" style="color:var(--red);font-size:12px;text-align:center;display:none;">⚠ Du hast aktuell mehr Spiele in der Playlist als die neue Größe erlaubt. Die letzten werden entfernt.</p>
   </div>
 </div>
 
@@ -717,7 +676,7 @@
 <div class="modal-overlay hidden" id="playlistPickModal">
   <div class="modal" style="max-width:560px;">
     <button class="modal-close" onclick="document.getElementById('playlistPickModal').classList.add('hidden')">✕</button>
-    <div class="modal-title">＋ Spiel zur Playlist hinzufügen</div>
+    <div class="modal-title">＋ Spiel zur Liste hinzufügen</div>
     <div class="search-wrap" style="margin-bottom:12px;">
       <input type="text" id="playlistPickSearch" placeholder="In Bibliothek suchen…" autocomplete="off">
     </div>
@@ -751,16 +710,6 @@
   </div>
 </div>
 
-<!-- CHALLENGE JOURNAL -->
-<div class="modal-overlay hidden" id="journalModal">
-  <div class="modal" style="max-width:620px;">
-    <button class="modal-close" onclick="document.getElementById('journalModal').classList.add('hidden')">✕</button>
-    <div class="modal-title">📔 Challenge-Tagebuch</div>
-    <p style="color:var(--muted);font-size:13px;margin-bottom:14px;">Erfolgreich beendet: <b id="journalCount" style="color:#fbbf24;font-size:18px;">0</b></p>
-    <div id="journalList" style="max-height:60vh;overflow-y:auto;display:flex;flex-direction:column;gap:14px;"></div>
-    <p id="journalEmpty" style="color:var(--muted);font-size:13px;text-align:center;padding:20px;display:none;">Noch keine abgeschlossenen Challenges. Schaffe deine erste Playlist und sie landet hier!</p>
-  </div>
-</div>
 
 <script>
 
@@ -868,32 +817,19 @@ function saveLocal(g){
 function loadPlaylistLocal(){
   try{
     const r=localStorage.getItem(PLAYLIST_STORAGE_KEY);
-    if(!r) return {slots:5,gameIds:[],celebrated:false};
+    if(!r) return {slots:5,gameIds:[]};
     const p=JSON.parse(r);
-    return {slots:[3,4,5].includes(p.slots)?p.slots:5, gameIds:Array.isArray(p.gameIds)?p.gameIds:[], celebrated:!!p.celebrated};
-  }catch{return {slots:5,gameIds:[],celebrated:false};}
+    return {slots:5, gameIds:Array.isArray(p.gameIds)?p.gameIds.slice(0,5):[]};
+  }catch{return {slots:5,gameIds:[]};}
 }
 function savePlaylistLocal(p){
   try{ localStorage.setItem(PLAYLIST_STORAGE_KEY,JSON.stringify(p)); }catch(e){}
-}
-
-function loadJournalLocal(){
-  try{
-    const r=localStorage.getItem(JOURNAL_STORAGE_KEY);
-    if(!r) return [];
-    const j=JSON.parse(r);
-    return Array.isArray(j)?j:[];
-  }catch{return [];}
-}
-function saveJournalLocal(j){
-  try{ localStorage.setItem(JOURNAL_STORAGE_KEY,JSON.stringify(j)); }catch(e){}
 }
 
 // Save = local immediately + cloud (debounced)
 function save(g){
   saveLocal(g);
   savePlaylistLocal(playlist);
-  saveJournalLocal(challengeJournal);
   if(!cloudEnabled) return;
   clearTimeout(saveDebounce);
   saveDebounce=setTimeout(()=>saveCloud(g),800);
@@ -906,7 +842,7 @@ async function saveCloud(g){
     const res=await fetch(JSONBIN_URL,{
       method:'PUT',
       headers:{'Content-Type':'application/json','X-Master-Key':JSONBIN_KEY},
-      body:JSON.stringify({games:g, playlist:playlist, journal:challengeJournal}),
+      body:JSON.stringify({games:g, playlist:playlist}),
       signal:AbortSignal.timeout(10000),
     });
     if(!res.ok) throw new Error('save failed '+res.status);
@@ -931,13 +867,8 @@ async function loadCloud(){
     // Pull playlist if present
     if(record && record.playlist && typeof record.playlist==='object'){
       const p=record.playlist;
-      playlist={slots:[3,4,5].includes(p.slots)?p.slots:5, gameIds:Array.isArray(p.gameIds)?p.gameIds:[], celebrated:!!p.celebrated};
+      playlist={slots:5, gameIds:Array.isArray(p.gameIds)?p.gameIds.slice(0,5):[]};
       savePlaylistLocal(playlist);
-    }
-    // Pull challenge journal if present
-    if(record && Array.isArray(record.journal)){
-      challengeJournal=record.journal;
-      saveJournalLocal(challengeJournal);
     }
     setCloudStatus('ok');
     if(cloudGames && cloudGames.length){
@@ -970,20 +901,16 @@ function setCloudStatus(s){
 }
 
 let activeTab='all',searchQuery='',platformFilter='',genreFilter='',yearFilter='',releaseYearFilter='',sortOrder='az';
-// Playlist (Challenge): single playlist with configurable slot count, default pool = backlog
-let playlist={slots:5, gameIds:[], celebrated:false};
+// "Als Nächstes" — ordered list of up to 5 games the user plans to play next
+let playlist={slots:5, gameIds:[]};
 const PLAYLIST_STORAGE_KEY='gamevault_playlist_v1';
 const PLAYLIST_DEFAULT_POOL='backlog';
-// Challenge journal: archive of completed challenges
-let challengeJournal=[]; // array of {id, completedAt (ISO date), slots, games:[{id,title,coverUrl}]}
-const JOURNAL_STORAGE_KEY='gamevault_journal_v1';
 
 let games=loadLocal();
 let nextId=games.length?Math.max(...games.map(g=>g.id))+1:1;
 playlist=loadPlaylistLocal();
 // Clean up playlist: remove ids that no longer exist
 playlist.gameIds=playlist.gameIds.filter(id=>games.some(g=>g.id===id));
-challengeJournal=loadJournalLocal();
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
@@ -1330,35 +1257,13 @@ function syncPlaylistTabCount(){
 
 function renderPlaylist(){
   const grid=document.getElementById('playlistGrid');
-  const banner=document.getElementById('challengeCompleteBanner');
-  if(!grid||!banner) return;
+  if(!grid) return;
 
   const items=getPlaylistGames();
-  const beatenCount=items.filter(g=>g.status==='beaten').length;
   const total=playlist.slots;
-  const pct=total>0?Math.round((beatenCount/total)*100):0;
-
-  // Progress display
-  document.getElementById('playlistProgressDone').textContent=beatenCount;
-  document.getElementById('playlistProgressTotal').textContent=total;
-  document.getElementById('playlistProgressPct').textContent=pct+'%';
-  document.getElementById('playlistProgressFill').style.width=pct+'%';
-
-  // Challenge complete banner: all slots filled AND all beaten
-  const isComplete=items.length===total && total>0 && beatenCount===total;
-  if(isComplete){
-    banner.innerHTML=`<div class="challenge-complete">
-      <h2>🎉 Challenge geschafft!</h2>
-      <p>Alle ${total} Spiele durchgespielt. Glückwunsch!</p>
-      <button class="btn btn-primary" onclick="clearPlaylist(true)">🚀 Neue Challenge starten</button>
-    </div>`;
-  }else{
-    banner.innerHTML='';
-  }
 
   const statusDotClass={playing:'sdot-playing',beaten:'sdot-beaten',backlog:'sdot-backlog',wishlist:'sdot-wishlist',dropped:'sdot-dropped'};
 
-  // Build slot tiles: filled + empty placeholders up to playlist.slots
   let html='';
   for(let i=0;i<total;i++){
     const g=items[i];
@@ -1367,17 +1272,16 @@ function renderPlaylist(){
       const coverHtml=g.coverUrl
         ?`<img class="game-tile-cover" src="${esc(g.coverUrl)}" loading="lazy" onerror="this.style.display='none';this.nextSibling.style.display='flex'"><div class="game-tile-cover-ph" style="display:none;">🎮</div>`
         :`<div class="game-tile-cover-ph">🎮</div>`;
-      const beatenOverlay=g.status==='beaten'?'<div class="playlist-card-beaten-overlay" title="Durchgespielt">✅</div>':'';
-      html+=`<div class="game-card playlist-card${g.status==='beaten'?' beaten':''}" data-id="${g.id}" onclick="openDetail(${g.id})">
+      html+=`<div class="game-card playlist-card" data-id="${g.id}" data-pos="${i}" draggable="true" onclick="openDetail(${g.id})">
+        <div class="playlist-order-badge">${i+1}</div>
         ${coverHtml}
         <div class="game-tile-status ${dot}" title="${STATUS_LABELS[g.status]||''}"></div>
-        ${beatenOverlay}
-        ${g.isFavorite?`<div class="game-tile-fav" title="Lieblingsspiel" style="top:${g.status==='beaten'?'28px':'5px'};">👑</div>`:''}
+        ${g.isFavorite?'<div class="game-tile-fav" title="Lieblingsspiel">👑</div>':''}
         <div class="game-tile-footer"><div class="game-tile-title">${esc(g.title)}</div></div>
-        <button class="playlist-card-remove" title="Aus Playlist entfernen" onclick="event.stopPropagation();removeFromPlaylist(${g.id})">✕</button>
+        <button class="playlist-card-remove" title="Aus Liste entfernen" onclick="event.stopPropagation();removeFromPlaylist(${g.id})">✕</button>
       </div>`;
     }else{
-      html+=`<div class="playlist-slot" onclick="openPlaylistPick()">
+      html+=`<div class="playlist-slot" data-pos="${i}" onclick="openPlaylistPick()">
         <div class="slot-num">${i+1}</div>
         <div>+ Spiel hinzufügen</div>
       </div>`;
@@ -1385,11 +1289,112 @@ function renderPlaylist(){
   }
   grid.innerHTML=html;
   syncPlaylistTabCount();
+  attachPlaylistDragHandlers();
+}
+
+// ─── Drag & Drop reordering ───────────────────────────────────────────────
+let dragSourceId=null;
+let touchDragState=null; // {id, startX, startY, ghost}
+
+function attachPlaylistDragHandlers(){
+  const cards=document.querySelectorAll('#playlistGrid .playlist-card');
+  cards.forEach(card=>{
+    // Desktop / pointer drag
+    card.addEventListener('dragstart',e=>{
+      dragSourceId=parseInt(card.dataset.id);
+      card.classList.add('dragging');
+      try{e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',String(dragSourceId));}catch{}
+    });
+    card.addEventListener('dragend',()=>{
+      card.classList.remove('dragging');
+      document.querySelectorAll('#playlistGrid .drag-over').forEach(el=>el.classList.remove('drag-over'));
+      dragSourceId=null;
+    });
+    card.addEventListener('dragover',e=>{
+      e.preventDefault();
+      if(dragSourceId===null||parseInt(card.dataset.id)===dragSourceId)return;
+      card.classList.add('drag-over');
+    });
+    card.addEventListener('dragleave',()=>card.classList.remove('drag-over'));
+    card.addEventListener('drop',e=>{
+      e.preventDefault();
+      card.classList.remove('drag-over');
+      if(dragSourceId===null)return;
+      const targetId=parseInt(card.dataset.id);
+      if(targetId===dragSourceId)return;
+      reorderPlaylist(dragSourceId,targetId);
+    });
+
+    // Touch fallback: long-press to start, drag, release on target
+    card.addEventListener('touchstart',e=>{
+      const t=e.touches[0];
+      touchDragState={id:parseInt(card.dataset.id),startX:t.clientX,startY:t.clientY,armed:false,timer:null,ghost:null,card};
+      touchDragState.timer=setTimeout(()=>{
+        if(!touchDragState||touchDragState.id!==parseInt(card.dataset.id))return;
+        touchDragState.armed=true;
+        card.classList.add('dragging');
+        if(navigator.vibrate)navigator.vibrate(30);
+      },350);
+    },{passive:true});
+    card.addEventListener('touchmove',e=>{
+      if(!touchDragState)return;
+      const t=e.touches[0];
+      const dx=Math.abs(t.clientX-touchDragState.startX), dy=Math.abs(t.clientY-touchDragState.startY);
+      if(!touchDragState.armed){
+        // Not yet armed: if user moves too much, cancel the press
+        if(dx>10||dy>10){clearTimeout(touchDragState.timer);touchDragState=null;}
+        return;
+      }
+      e.preventDefault();
+      // Highlight card under finger
+      const el=document.elementFromPoint(t.clientX,t.clientY);
+      const overCard=el?el.closest('.playlist-card'):null;
+      document.querySelectorAll('#playlistGrid .drag-over').forEach(x=>x.classList.remove('drag-over'));
+      if(overCard && parseInt(overCard.dataset.id)!==touchDragState.id) overCard.classList.add('drag-over');
+    },{passive:false});
+    card.addEventListener('touchend',e=>{
+      if(!touchDragState)return;
+      clearTimeout(touchDragState.timer);
+      if(touchDragState.armed){
+        const t=e.changedTouches[0];
+        const el=document.elementFromPoint(t.clientX,t.clientY);
+        const overCard=el?el.closest('.playlist-card'):null;
+        card.classList.remove('dragging');
+        document.querySelectorAll('#playlistGrid .drag-over').forEach(x=>x.classList.remove('drag-over'));
+        if(overCard && parseInt(overCard.dataset.id)!==touchDragState.id){
+          reorderPlaylist(touchDragState.id, parseInt(overCard.dataset.id));
+          touchDragState=null;
+          // Prevent the click handler from firing (would open detail)
+          e.preventDefault();
+          return;
+        }
+      }
+      touchDragState=null;
+    });
+    card.addEventListener('touchcancel',()=>{
+      if(touchDragState){clearTimeout(touchDragState.timer);}
+      card.classList.remove('dragging');
+      document.querySelectorAll('#playlistGrid .drag-over').forEach(x=>x.classList.remove('drag-over'));
+      touchDragState=null;
+    });
+  });
+}
+
+function reorderPlaylist(sourceId,targetId){
+  const ids=playlist.gameIds.slice();
+  const si=ids.indexOf(sourceId), ti=ids.indexOf(targetId);
+  if(si<0||ti<0)return;
+  // Move source so that it lands at target's position
+  ids.splice(si,1);
+  ids.splice(ti,0,sourceId);
+  playlist.gameIds=ids;
+  save(games);
+  renderPlaylist();
 }
 
 function addToPlaylist(id){
   if(playlist.gameIds.length>=playlist.slots){
-    alert(`Playlist ist voll (${playlist.slots}/${playlist.slots}). Entferne erst ein Spiel oder erhöhe die Größe.`);
+    alert(`Liste ist voll (${playlist.slots}/${playlist.slots}). Entferne erst ein Spiel.`);
     return false;
   }
   if(playlist.gameIds.includes(id))return false;
@@ -1411,53 +1416,17 @@ function removeFromPlaylist(id){
 
 function clearPlaylist(skipConfirm){
   if(!skipConfirm){
-    if(!confirm('Playlist wirklich leeren? Die Spiele bleiben in deiner Bibliothek.'))return;
-  }else{
-    // skipConfirm=true is called from the "Neue Challenge starten" button after a completed challenge
-    // Archive it to the journal first
-    const items=getPlaylistGames();
-    const allBeaten=items.length===playlist.slots && items.length>0 && items.every(g=>g.status==='beaten');
-    if(allBeaten){
-      challengeJournal.unshift({
-        id:'ch_'+Date.now(),
-        completedAt:new Date().toISOString(),
-        slots:playlist.slots,
-        games:items.map(g=>({id:g.id, title:g.title, coverUrl:g.coverUrl||''})),
-      });
-    }
+    if(!confirm('Liste wirklich leeren?'))return;
   }
   playlist.gameIds=[];
   save(games);
   renderPlaylist();
-  updateJournalBadge();
-}
-
-function setPlaylistSlots(n){
-  if(![3,4,5].includes(n))return;
-  // If reducing and current count exceeds new size: trim from the end
-  if(playlist.gameIds.length>n){
-    if(!confirm(`Du hast ${playlist.gameIds.length} Spiele in der Playlist. Die letzten ${playlist.gameIds.length-n} werden entfernt. Fortfahren?`))return;
-    playlist.gameIds=playlist.gameIds.slice(0,n);
-  }
-  playlist.slots=n;
-  save(games);
-  document.getElementById('playlistSlotsModal').classList.add('hidden');
-  if(activeTab==='playlist')renderPlaylist();
-}
-
-function openPlaylistSlotsModal(){
-  const warn=document.getElementById('playlistSlotsWarn');
-  if(warn){
-    // show warning if any reduction would lose games
-    warn.style.display='none';
-  }
-  document.getElementById('playlistSlotsModal').classList.remove('hidden');
 }
 
 // ─── Pick game modal ──────────────────────────────────────────────────────
 function openPlaylistPick(){
   if(playlist.gameIds.length>=playlist.slots){
-    alert(`Playlist ist voll (${playlist.slots}/${playlist.slots}). Entferne erst ein Spiel oder erhöhe die Größe.`);
+    alert(`Liste ist voll (${playlist.slots}/${playlist.slots}). Entferne erst ein Spiel.`);
     return;
   }
   document.getElementById('playlistPickModal').classList.remove('hidden');
@@ -1497,7 +1466,7 @@ function renderPlaylistPickList(q){
 function openPlaylistRandom(){
   const free=playlist.slots-playlist.gameIds.length;
   if(free<=0){
-    alert(`Playlist ist voll (${playlist.slots}/${playlist.slots}). Entferne erst ein Spiel oder erhöhe die Größe.`);
+    alert(`Liste ist voll (${playlist.slots}/${playlist.slots}). Entferne erst ein Spiel.`);
     return;
   }
   // count select
@@ -1567,64 +1536,6 @@ function autoCleanPlaylist(){
   return playlist.gameIds.length!==before;
 }
 
-// ─── Challenge Journal ────────────────────────────────────────────────────
-function updateJournalBadge(){
-  const badge=document.getElementById('journalCountBadge');
-  if(badge)badge.textContent=challengeJournal.length;
-}
-
-function formatJournalDate(iso){
-  try{
-    const d=new Date(iso);
-    return d.toLocaleDateString('de-DE',{year:'numeric',month:'long',day:'numeric'});
-  }catch{return iso;}
-}
-
-function openJournalModal(){
-  renderJournal();
-  document.getElementById('journalModal').classList.remove('hidden');
-}
-
-function renderJournal(){
-  const list=document.getElementById('journalList');
-  const empty=document.getElementById('journalEmpty');
-  const count=document.getElementById('journalCount');
-  if(count)count.textContent=challengeJournal.length;
-  if(!challengeJournal.length){
-    list.innerHTML='';
-    empty.style.display='block';
-    return;
-  }
-  empty.style.display='none';
-  list.innerHTML=challengeJournal.map(entry=>{
-    const tiles=entry.games.map(g=>`
-      <div class="journal-game" title="${esc(g.title)}">
-        ${g.coverUrl?`<img src="${esc(g.coverUrl)}" loading="lazy">`:'<div class="journal-game-ph">🎮</div>'}
-        <div class="journal-game-title">${esc(g.title)}</div>
-      </div>
-    `).join('');
-    return`<div class="journal-entry">
-      <div class="journal-entry-head">
-        <div>
-          <div class="journal-entry-date">📅 ${formatJournalDate(entry.completedAt)}</div>
-          <div class="journal-entry-sub">${entry.games.length} ${entry.games.length===1?'Spiel':'Spiele'} durchgespielt</div>
-        </div>
-        <button class="playlist-btn danger" title="Eintrag löschen" onclick="deleteJournalEntry('${esc(entry.id)}')">🗑</button>
-      </div>
-      <div class="journal-games">${tiles}</div>
-    </div>`;
-  }).join('');
-}
-
-function deleteJournalEntry(id){
-  if(!confirm('Diesen Tagebuch-Eintrag wirklich löschen?'))return;
-  challengeJournal=challengeJournal.filter(e=>e.id!==id);
-  saveJournalLocal(challengeJournal);
-  if(cloudEnabled){clearTimeout(saveDebounce);saveDebounce=setTimeout(()=>saveCloud(games),800);}
-  renderJournal();
-  updateJournalBadge();
-}
-
 // ─── DETAIL MODAL ─────────────────────────────────────────────────────────
 let detailGameId=null;
 
@@ -1669,10 +1580,10 @@ function openDetail(id){
   if(plBtn){
     const inPlaylist=playlist.gameIds.includes(id);
     if(inPlaylist){
-      plBtn.textContent='✕ Aus Playlist';
+      plBtn.textContent='✕ Aus Liste';
       plBtn.style.background='rgba(251,191,36,0.15)';
     }else{
-      plBtn.textContent='🎯 Zur Playlist';
+      plBtn.textContent='🎯 Zur Liste';
       plBtn.style.background='transparent';
     }
   }
@@ -1984,7 +1895,7 @@ document.getElementById('sortSelect').addEventListener('change',e=>{sortOrder=e.
 
 // ─── EXPORT / IMPORT ──────────────────────────────────────────────────────
 document.getElementById('exportBtn').addEventListener('click',()=>{
-  const data=JSON.stringify({version:5,exported:new Date().toISOString(),games,playlist,journal:challengeJournal},null,2);
+  const data=JSON.stringify({version:5,exported:new Date().toISOString(),games,playlist},null,2);
   const blob=new Blob([data],{type:'application/json'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
@@ -2006,15 +1917,11 @@ document.getElementById('importFile').addEventListener('change',function(){
       // Restore playlist if present in backup
       if(parsed && parsed.playlist && typeof parsed.playlist==='object'){
         const p=parsed.playlist;
-        playlist={slots:[3,4,5].includes(p.slots)?p.slots:5, gameIds:Array.isArray(p.gameIds)?p.gameIds:[], celebrated:!!p.celebrated};
+        playlist={slots:5, gameIds:Array.isArray(p.gameIds)?p.gameIds.slice(0,5):[]};
         // Drop stale ids
         playlist.gameIds=playlist.gameIds.filter(id=>games.some(g=>g.id===id));
       }
-      // Restore journal if present in backup
-      if(parsed && Array.isArray(parsed.journal)){
-        challengeJournal=parsed.journal;
-      }
-      save(games);render();updateJournalBadge();
+      save(games);render();
       alert(`✅ ${migrated.length} Spiele importiert!`);
     }catch{alert('❌ Ungültige Datei.');}
   };
@@ -2282,9 +2189,7 @@ function selectCover(url){
 // ─── PLAYLIST EVENT WIRING ────────────────────────────────────────────────
 document.getElementById('playlistAddBtn').addEventListener('click',openPlaylistPick);
 document.getElementById('playlistRandomBtn').addEventListener('click',openPlaylistRandom);
-document.getElementById('playlistSlotsBtn').addEventListener('click',openPlaylistSlotsModal);
 document.getElementById('playlistClearBtn').addEventListener('click',()=>clearPlaylist(false));
-document.getElementById('playlistJournalBtn').addEventListener('click',openJournalModal);
 document.getElementById('playlistPickSearch').addEventListener('input',e=>renderPlaylistPickList(e.target.value));
 document.getElementById('playlistRandomPool').addEventListener('change',updatePlaylistRandomInfo);
 document.getElementById('playlistRandomConfirm').addEventListener('click',runPlaylistRandom);
@@ -2292,7 +2197,7 @@ document.getElementById('playlistRandomConfirm').addEventListener('click',runPla
 // ─── INIT ─────────────────────────────────────────────────────────────────
 // Force all forms and modals closed on every load
 setAddFormOpen(false);
-['cloudModal','coverPickerModal','randomModal','editModal','detailModal','journalModal','playlistSlotsModal','playlistPickModal','playlistRandomModal'].forEach(id=>{
+['cloudModal','coverPickerModal','randomModal','editModal','detailModal','playlistPickModal','playlistRandomModal'].forEach(id=>{
   const el=document.getElementById(id);
   if(el)el.classList.add('hidden');
 });
@@ -2303,7 +2208,6 @@ newYearPicker=buildYearPicker('newYearPicker','newYearInput','newYearDrop',[]);
 editYearPicker=buildYearPicker('editYearPicker','editYearInput','editYearDrop',[]);
 
 render(); // show local data immediately
-updateJournalBadge();
 
 loadCloudCreds(); // try to restore saved credentials
 
@@ -2319,9 +2223,7 @@ if(cloudEnabled){
       autoCleanPlaylist();
       saveLocal(games);
       savePlaylistLocal(playlist);
-      saveJournalLocal(challengeJournal);
       render();
-      updateJournalBadge();
     }
   })();
 }else{
@@ -2340,9 +2242,7 @@ document.addEventListener('visibilitychange',()=>{
         autoCleanPlaylist();
         saveLocal(games);
         savePlaylistLocal(playlist);
-        saveJournalLocal(challengeJournal);
         render();
-        updateJournalBadge();
       }
     })();
   }
