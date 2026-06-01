@@ -70,19 +70,26 @@
   .playlist-btn.primary:hover{background:#f59e0b;border-color:#f59e0b;color:var(--bg);}
   .playlist-btn.danger:hover{border-color:var(--red);color:var(--red);}
 
-  .playlist-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;}
-  .playlist-slot{background:var(--surface);border:2px dashed var(--border);border-radius:10px;aspect-ratio:3/4;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--muted);font-size:13px;text-align:center;cursor:pointer;transition:all 0.2s;padding:14px;}
-  .playlist-slot:hover{border-color:#fbbf24;color:#fbbf24;}
-  .playlist-slot .slot-num{font-family:'Orbitron',sans-serif;font-size:22px;color:#fbbf24;opacity:0.4;margin-bottom:4px;}
-  .playlist-card{position:relative;border:2px solid transparent;cursor:grab;}
-  .playlist-card:active{cursor:grabbing;}
-  .playlist-card.dragging{opacity:0.5;transform:scale(0.96);transition:transform 0.15s;}
-  .playlist-card.drag-over{border-color:#fbbf24;box-shadow:0 0 14px rgba(251,191,36,0.55);}
-  .playlist-order-badge{position:absolute;top:6px;right:6px;width:24px;height:24px;border-radius:50%;background:#fbbf24;color:var(--bg);font-family:'Orbitron',sans-serif;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;z-index:4;border:2px solid var(--bg);box-shadow:0 0 6px rgba(251,191,36,0.5);pointer-events:none;}
-  .playlist-card .game-tile-status{display:none;}
-  .playlist-card-remove{position:absolute;bottom:6px;right:6px;width:22px;height:22px;border-radius:50%;background:rgba(8,11,20,0.85);color:#fff;border:1px solid rgba(255,255,255,0.25);font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:5;line-height:1;padding:0;opacity:0;transition:opacity 0.18s,background 0.2s,border-color 0.2s;}
-  .playlist-card:hover .playlist-card-remove{opacity:1;}
-  .playlist-card-remove:hover{background:var(--red);border-color:var(--red);}
+  .playlist-grid{display:flex;flex-direction:column;gap:10px;}
+  .pl-row{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 12px;transition:border-color 0.2s;}
+  .pl-row:hover{border-color:rgba(251,191,36,0.4);}
+  .pl-row-empty{border:2px dashed var(--border);cursor:pointer;color:var(--muted);padding:18px 12px;}
+  .pl-row-empty:hover{border-color:#fbbf24;color:#fbbf24;}
+  .pl-row-pos{width:30px;height:30px;border-radius:50%;background:#fbbf24;color:var(--bg);font-family:'Orbitron',sans-serif;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .pl-row-pos-empty{background:transparent;color:#fbbf24;border:2px solid var(--border);}
+  .pl-row-empty-text{flex:1;font-size:14px;font-weight:600;}
+  .pl-row-cover-wrap{flex-shrink:0;cursor:pointer;}
+  .pl-row-cover{width:44px;height:60px;border-radius:6px;object-fit:cover;display:block;border:1px solid var(--border);}
+  .pl-row-cover-ph{background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:20px;}
+  .pl-row-body{flex:1;min-width:0;cursor:pointer;}
+  .pl-row-title{font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text);}
+  .pl-row-meta{font-size:12px;color:var(--muted);margin-top:3px;display:flex;align-items:center;gap:5px;}
+  .pl-status-dot{width:8px;height:8px;border-radius:50%;display:inline-block;}
+  .pl-row-controls{display:flex;gap:4px;flex-shrink:0;}
+  .pl-arrow,.pl-remove{width:34px;height:34px;border-radius:7px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;padding:0;transition:all 0.15s;}
+  .pl-arrow:hover:not(:disabled){border-color:#fbbf24;color:#fbbf24;}
+  .pl-arrow:disabled{opacity:0.3;cursor:not-allowed;}
+  .pl-remove:hover{border-color:var(--red);color:var(--red);}
 
   .playlist-empty{text-align:center;padding:32px 20px;color:var(--muted);background:var(--surface);border:1px dashed var(--border);border-radius:10px;}
   .playlist-empty .emoji{font-size:36px;margin-bottom:8px;}
@@ -303,7 +310,7 @@
         <input type="file" id="importFile" accept=".json" style="display:none;">
         <label class="hdr-btn" for="csvImportFile" style="background:rgba(124,58,237,0.15);border-color:rgba(124,58,237,0.4);color:#a78bfa;">📋 CSV importieren</label>
         <input type="file" id="csvImportFile" accept=".csv,.txt" style="display:none;">
-        <div style="color:var(--muted);font-size:12px;letter-spacing:1px;">powered by <span class="rawg-badge">RAWG</span> <span style="opacity:0.4;font-size:11px;margin-left:6px;">v1.3.0</span></div>
+        <div style="color:var(--muted);font-size:12px;letter-spacing:1px;">powered by <span class="rawg-badge">RAWG</span> <span style="opacity:0.4;font-size:11px;margin-left:6px;">v1.3.1</span></div>
       </div>
     </div>
   </header>
@@ -344,7 +351,7 @@
     <button class="tab" data-tab="beaten">Durchgespielt <span class="tab-count" id="tc-beaten">0</span></button>
     <button class="tab" data-tab="wishlist">Wunschliste <span class="tab-count" id="tc-wishlist">0</span></button>
     <button class="tab" data-tab="dropped">Abgebrochen <span class="tab-count" id="tc-dropped">0</span></button>
-    <button class="tab" data-tab="playlist">🎯 Als Nächstes <span class="tab-count" id="tc-playlist">0</span></button>
+    <button class="tab" data-tab="playlist">🎯 Reihenfolge <span class="tab-count" id="tc-playlist">0</span></button>
   </div>
 
   <div class="filter-bar">
@@ -495,14 +502,14 @@
 
   <div class="playlist-section" id="playlistSection" style="display:none;">
     <div class="playlist-header">
-      <div class="playlist-title">🎯 Als Nächstes spielen</div>
+      <div class="playlist-title">🎯 Reihenfolge</div>
       <div class="playlist-actions">
         <button class="playlist-btn primary" id="playlistAddBtn">＋ Spiel</button>
         <button class="playlist-btn" id="playlistRandomBtn">🎲 Zufall</button>
         <button class="playlist-btn danger" id="playlistClearBtn">🗑 Leeren</button>
       </div>
     </div>
-    <p style="color:var(--muted);font-size:12px;margin:-6px 0 14px 0;">Tipp: Kacheln per Drag &amp; Drop umsortieren.</p>
+    <p style="color:var(--muted);font-size:12px;margin:-6px 0 14px 0;">Die nächsten 5 Spiele in deiner Wunschreihenfolge.</p>
     <div class="playlist-grid" id="playlistGrid"></div>
   </div>
 
@@ -1270,123 +1277,40 @@ function renderPlaylist(){
     if(g){
       const dot=statusDotClass[g.status]||'sdot-backlog';
       const coverHtml=g.coverUrl
-        ?`<img class="game-tile-cover" src="${esc(g.coverUrl)}" loading="lazy" onerror="this.style.display='none';this.nextSibling.style.display='flex'"><div class="game-tile-cover-ph" style="display:none;">🎮</div>`
-        :`<div class="game-tile-cover-ph">🎮</div>`;
-      html+=`<div class="game-card playlist-card" data-id="${g.id}" data-pos="${i}" draggable="true" onclick="openDetail(${g.id})">
-        <div class="playlist-order-badge">${i+1}</div>
-        ${coverHtml}
-        <div class="game-tile-status ${dot}" title="${STATUS_LABELS[g.status]||''}"></div>
-        ${g.isFavorite?'<div class="game-tile-fav" title="Lieblingsspiel">👑</div>':''}
-        <div class="game-tile-footer"><div class="game-tile-title">${esc(g.title)}</div></div>
-        <button class="playlist-card-remove" title="Aus Liste entfernen" onclick="event.stopPropagation();removeFromPlaylist(${g.id})">✕</button>
+        ?`<img class="pl-row-cover" src="${esc(g.coverUrl)}" loading="lazy" onerror="this.style.display='none';this.nextSibling.style.display='flex'"><div class="pl-row-cover pl-row-cover-ph" style="display:none;">🎮</div>`
+        :`<div class="pl-row-cover pl-row-cover-ph">🎮</div>`;
+      const isFirst=i===0, isLast=i===items.length-1;
+      html+=`<div class="pl-row" data-id="${g.id}">
+        <div class="pl-row-pos">${i+1}</div>
+        <div class="pl-row-cover-wrap" onclick="openDetail(${g.id})">${coverHtml}</div>
+        <div class="pl-row-body" onclick="openDetail(${g.id})">
+          <div class="pl-row-title">${g.isFavorite?'👑 ':''}${esc(g.title)}</div>
+          <div class="pl-row-meta"><span class="pl-status-dot ${dot}"></span>${STATUS_LABELS[g.status]||''}${g.genre?' · '+esc(g.genre):''}</div>
+        </div>
+        <div class="pl-row-controls">
+          <button class="pl-arrow" ${isFirst?'disabled':''} title="Nach oben" onclick="movePlaylistItem(${g.id},-1)">▲</button>
+          <button class="pl-arrow" ${isLast?'disabled':''} title="Nach unten" onclick="movePlaylistItem(${g.id},1)">▼</button>
+          <button class="pl-remove" title="Entfernen" onclick="removeFromPlaylist(${g.id})">✕</button>
+        </div>
       </div>`;
     }else{
-      html+=`<div class="playlist-slot" data-pos="${i}" onclick="openPlaylistPick()">
-        <div class="slot-num">${i+1}</div>
-        <div>+ Spiel hinzufügen</div>
+      html+=`<div class="pl-row pl-row-empty" onclick="openPlaylistPick()">
+        <div class="pl-row-pos pl-row-pos-empty">${i+1}</div>
+        <div class="pl-row-empty-text">＋ Spiel hinzufügen</div>
       </div>`;
     }
   }
   grid.innerHTML=html;
   syncPlaylistTabCount();
-  attachPlaylistDragHandlers();
 }
 
-// ─── Drag & Drop reordering ───────────────────────────────────────────────
-let dragSourceId=null;
-let touchDragState=null; // {id, startX, startY, ghost}
-
-function attachPlaylistDragHandlers(){
-  const cards=document.querySelectorAll('#playlistGrid .playlist-card');
-  cards.forEach(card=>{
-    // Desktop / pointer drag
-    card.addEventListener('dragstart',e=>{
-      dragSourceId=parseInt(card.dataset.id);
-      card.classList.add('dragging');
-      try{e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',String(dragSourceId));}catch{}
-    });
-    card.addEventListener('dragend',()=>{
-      card.classList.remove('dragging');
-      document.querySelectorAll('#playlistGrid .drag-over').forEach(el=>el.classList.remove('drag-over'));
-      dragSourceId=null;
-    });
-    card.addEventListener('dragover',e=>{
-      e.preventDefault();
-      if(dragSourceId===null||parseInt(card.dataset.id)===dragSourceId)return;
-      card.classList.add('drag-over');
-    });
-    card.addEventListener('dragleave',()=>card.classList.remove('drag-over'));
-    card.addEventListener('drop',e=>{
-      e.preventDefault();
-      card.classList.remove('drag-over');
-      if(dragSourceId===null)return;
-      const targetId=parseInt(card.dataset.id);
-      if(targetId===dragSourceId)return;
-      reorderPlaylist(dragSourceId,targetId);
-    });
-
-    // Touch fallback: long-press to start, drag, release on target
-    card.addEventListener('touchstart',e=>{
-      const t=e.touches[0];
-      touchDragState={id:parseInt(card.dataset.id),startX:t.clientX,startY:t.clientY,armed:false,timer:null,ghost:null,card};
-      touchDragState.timer=setTimeout(()=>{
-        if(!touchDragState||touchDragState.id!==parseInt(card.dataset.id))return;
-        touchDragState.armed=true;
-        card.classList.add('dragging');
-        if(navigator.vibrate)navigator.vibrate(30);
-      },350);
-    },{passive:true});
-    card.addEventListener('touchmove',e=>{
-      if(!touchDragState)return;
-      const t=e.touches[0];
-      const dx=Math.abs(t.clientX-touchDragState.startX), dy=Math.abs(t.clientY-touchDragState.startY);
-      if(!touchDragState.armed){
-        // Not yet armed: if user moves too much, cancel the press
-        if(dx>10||dy>10){clearTimeout(touchDragState.timer);touchDragState=null;}
-        return;
-      }
-      e.preventDefault();
-      // Highlight card under finger
-      const el=document.elementFromPoint(t.clientX,t.clientY);
-      const overCard=el?el.closest('.playlist-card'):null;
-      document.querySelectorAll('#playlistGrid .drag-over').forEach(x=>x.classList.remove('drag-over'));
-      if(overCard && parseInt(overCard.dataset.id)!==touchDragState.id) overCard.classList.add('drag-over');
-    },{passive:false});
-    card.addEventListener('touchend',e=>{
-      if(!touchDragState)return;
-      clearTimeout(touchDragState.timer);
-      if(touchDragState.armed){
-        const t=e.changedTouches[0];
-        const el=document.elementFromPoint(t.clientX,t.clientY);
-        const overCard=el?el.closest('.playlist-card'):null;
-        card.classList.remove('dragging');
-        document.querySelectorAll('#playlistGrid .drag-over').forEach(x=>x.classList.remove('drag-over'));
-        if(overCard && parseInt(overCard.dataset.id)!==touchDragState.id){
-          reorderPlaylist(touchDragState.id, parseInt(overCard.dataset.id));
-          touchDragState=null;
-          // Prevent the click handler from firing (would open detail)
-          e.preventDefault();
-          return;
-        }
-      }
-      touchDragState=null;
-    });
-    card.addEventListener('touchcancel',()=>{
-      if(touchDragState){clearTimeout(touchDragState.timer);}
-      card.classList.remove('dragging');
-      document.querySelectorAll('#playlistGrid .drag-over').forEach(x=>x.classList.remove('drag-over'));
-      touchDragState=null;
-    });
-  });
-}
-
-function reorderPlaylist(sourceId,targetId){
+function movePlaylistItem(id,dir){
   const ids=playlist.gameIds.slice();
-  const si=ids.indexOf(sourceId), ti=ids.indexOf(targetId);
-  if(si<0||ti<0)return;
-  // Move source so that it lands at target's position
-  ids.splice(si,1);
-  ids.splice(ti,0,sourceId);
+  const i=ids.indexOf(id);
+  if(i<0)return;
+  const j=i+dir;
+  if(j<0||j>=ids.length)return;
+  [ids[i],ids[j]]=[ids[j],ids[i]];
   playlist.gameIds=ids;
   save(games);
   renderPlaylist();
