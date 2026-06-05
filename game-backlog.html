@@ -730,41 +730,24 @@ function setAddFormOpen(open){
 const RAWG_KEY='43ad5537da7644b2a23d67661ae38c96';
 const STORAGE_KEY='gamevault_v4';
 
-// ─── CLOUD SYNC (JSONBin) ─────────────────────────────────────────────────
-// Credentials are NOT stored in this file. They are entered once per device
-// and saved only in this browser's local storage.
-const CRED_KEY='gamevault_cloud_cred';
-let JSONBIN_ID=null;
-let JSONBIN_KEY=null;
-let JSONBIN_URL=null;
-let cloudEnabled=false;
+// ─── CLOUD SYNC (Cloudflare KV Worker) ─────────────────────────────────────
+// Connection is hardwired to a personal Cloudflare Worker + KV store.
+// No per-device credentials needed. Set APP_SECRET below before pushing.
+const WORKER_URL='https://kv-store.neuzcore.workers.dev';
+const APP_SECRET='DEIN-SECRET'; // <-- HIER dein Cloudflare-Worker-Secret eintragen
+const KV_LIBRARY=`${WORKER_URL}/gamingbacklog/library`;
+
+const CRED_KEY='gamevault_cloud_cred'; // (legacy – nicht mehr genutzt)
+let JSONBIN_ID=null;   // (legacy – bleibt deklariert, damit die alte Modal-Logik nicht bricht)
+let JSONBIN_KEY=null;  // (legacy)
+let cloudEnabled=true; // Cloud ist mit dem fest verdrahteten Worker immer an
 let cloudStatus='idle'; // idle | loading | saving | ok | error
 let saveDebounce=null;
 
-function loadCloudCreds(){
-  try{
-    const c=JSON.parse(localStorage.getItem(CRED_KEY)||'null');
-    if(c && c.id && c.key){
-      JSONBIN_ID=c.id;
-      JSONBIN_KEY=c.key;
-      JSONBIN_URL=`https://api.jsonbin.io/v3/b/${JSONBIN_ID}`;
-      cloudEnabled=true;
-      return true;
-    }
-  }catch(e){}
-  return false;
-}
-
-function saveCloudCreds(id,key){
-  localStorage.setItem(CRED_KEY,JSON.stringify({id:id.trim(),key:key.trim()}));
-  loadCloudCreds();
-}
-
-function clearCloudCreds(){
-  localStorage.removeItem(CRED_KEY);
-  JSONBIN_ID=JSONBIN_KEY=JSONBIN_URL=null;
-  cloudEnabled=false;
-}
+// Cloud is hardwired now; these stay only so the old setup modal keeps working.
+function loadCloudCreds(){ cloudEnabled=true; return true; }
+function saveCloudCreds(id,key){ cloudEnabled=true; }
+function clearCloudCreds(){ cloudEnabled=false; } // "Trennen" = nur lokal speichern
 
 const ALL_PLATFORMS=[
   {group:'PC Launcher', items:['Steam','GOG','Epic Games Store','EA App','Ubisoft Connect','Battle.net','Xbox PC / Game Pass','PlayStation PC']},
@@ -846,9 +829,9 @@ async function saveCloud(g){
   if(!cloudEnabled) return;
   setCloudStatus('saving');
   try{
-    const res=await fetch(JSONBIN_URL,{
+    const res=await fetch(KV_LIBRARY,{
       method:'PUT',
-      headers:{'Content-Type':'application/json','X-Master-Key':JSONBIN_KEY},
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+APP_SECRET},
       body:JSON.stringify({games:g, playlist:playlist}),
       signal:AbortSignal.timeout(10000),
     });
@@ -863,13 +846,18 @@ async function loadCloud(){
   if(!cloudEnabled) return null;
   setCloudStatus('loading');
   try{
-    const res=await fetch(`${JSONBIN_URL}/latest`,{
-      headers:{'X-Master-Key':JSONBIN_KEY},
+    const res=await fetch(KV_LIBRARY,{
+      headers:{'Authorization':'Bearer '+APP_SECRET},
       signal:AbortSignal.timeout(10000),
     });
+    if(res.status===404){
+      // Noch nichts im KV-Store → lokale Daten hochschieben, damit nichts verloren geht
+      setCloudStatus('ok');
+      if(games && games.length){ saveCloud(games); }
+      return null;
+    }
     if(!res.ok) throw new Error('load failed '+res.status);
-    const data=await res.json();
-    const record=data.record||{};
+    const record=await res.json(); // Worker liefert die Daten direkt – kein data.record mehr
     const cloudGames=Array.isArray(record.games)?record.games:(Array.isArray(record)?record:null);
     // Pull playlist if present
     if(record && record.playlist && typeof record.playlist==='object'){
@@ -2175,7 +2163,7 @@ document.addEventListener('visibilitychange',()=>{
 // ─── PWA SERVICE WORKER ───────────────────────────────────────────────────
 // APP_VERSION: increment this number every time you upload a new version to GitHub.
 // This forces Firefox (and all browsers) to fetch the new sw.js and clear the old cache.
-const APP_VERSION = '1.0.9';
+const APP_VERSION = '1.1.0';
 
 if('serviceWorker' in navigator){
   window.addEventListener('load', async ()=>{
