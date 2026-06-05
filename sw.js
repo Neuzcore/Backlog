@@ -1,6 +1,6 @@
 // Neuzcores Gaming Backlog — Service Worker
 // Bump this version alongside APP_VERSION in game-backlog.html on every update
-const CACHE = 'gaming-backlog-v1.0.9';
+const CACHE = 'gaming-backlog-v1.1.0';
 const ASSETS = [
   './manifest.json',
   './icon-192.png',
@@ -38,10 +38,11 @@ self.addEventListener('message', e => {
 self.addEventListener('fetch', e => {
   const url = e.request.url;
 
-  // Never cache API/data requests
+  // Never cache API/data requests (incl. Cloudflare Worker = KV-Store)
   if (url.includes('jsonbin.io') || url.includes('rawg.io') ||
       url.includes('codetabs.com') || url.includes('allorigins.win') ||
-      url.includes('corsproxy.io') || url.includes('media.rawg.io')) {
+      url.includes('corsproxy.io') || url.includes('media.rawg.io') ||
+      url.includes('workers.dev')) {
     return;
   }
 
