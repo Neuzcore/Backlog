@@ -321,20 +321,16 @@
       <button class="modal-close" id="closeCloud">✕</button>
       <div class="modal-title">☁ Cloud-Synchronisation</div>
       <p style="font-size:14px;color:var(--muted);line-height:1.6;margin-bottom:18px;">
-        Gib deine JSONBin-Zugangsdaten ein, um deine Spieleliste zwischen
-        PC und Handy zu synchronisieren. Die Daten werden <strong>nur auf
-        diesem Gerät</strong> gespeichert und sind nicht im App-Code sichtbar.
+        Gib dein Worker-Secret ein, um deine Spieleliste zwischen
+        PC und Handy zu synchronisieren. Es wird <strong>nur auf
+        diesem Gerät</strong> gespeichert und ist nicht im App-Code sichtbar.
       </p>
-      <div class="form-group" style="margin-bottom:12px;">
-        <label>Bin ID</label>
-        <input type="text" id="cloudBinId" placeholder="z.B. 6a087414250b1311c35c408b" autocomplete="off">
-      </div>
       <div class="form-group" style="margin-bottom:8px;">
-        <label>Master Key</label>
-        <input type="password" id="cloudKey" placeholder="$2a$10$…" autocomplete="off">
+        <label>Worker Secret</label>
+        <input type="password" id="cloudKey" placeholder="dein Cloudflare-Worker-Secret" autocomplete="off">
       </div>
       <p style="font-size:12px;color:var(--muted);margin-bottom:18px;">
-        Beide Werte findest du in deinem JSONBin-Account unter „API Keys" und „Bins".
+        Das ist das Secret, das du beim Cloudflare-Worker mit <code>wrangler secret put APP_SECRET</code> gesetzt hast.
       </p>
       <div style="display:flex;gap:10px;">
         <button class="btn btn-primary" id="saveCloudCreds" style="flex:1;">Verbinden</button>
@@ -731,23 +727,39 @@ const RAWG_KEY='43ad5537da7644b2a23d67661ae38c96';
 const STORAGE_KEY='gamevault_v4';
 
 // ─── CLOUD SYNC (Cloudflare KV Worker) ─────────────────────────────────────
-// Connection is hardwired to a personal Cloudflare Worker + KV store.
-// No per-device credentials needed. Set APP_SECRET below before pushing.
+// The worker URL is public/non-sensitive and may live in code.
+// The SECRET is entered once per device and stored ONLY in this browser's
+// local storage — it never appears in this file or the public repo.
 const WORKER_URL='https://kv-store.neuzcore.workers.dev';
-const APP_SECRET='DEIN-SECRET'; // <-- HIER dein Cloudflare-Worker-Secret eintragen
 const KV_LIBRARY=`${WORKER_URL}/gamingbacklog/library`;
-
-const CRED_KEY='gamevault_cloud_cred'; // (legacy – nicht mehr genutzt)
-let JSONBIN_ID=null;   // (legacy – bleibt deklariert, damit die alte Modal-Logik nicht bricht)
-let JSONBIN_KEY=null;  // (legacy)
-let cloudEnabled=true; // Cloud ist mit dem fest verdrahteten Worker immer an
+const CRED_KEY='gamevault_cloud_cred';
+let APP_SECRET=null;
+let cloudEnabled=false;
 let cloudStatus='idle'; // idle | loading | saving | ok | error
 let saveDebounce=null;
 
-// Cloud is hardwired now; these stay only so the old setup modal keeps working.
-function loadCloudCreds(){ cloudEnabled=true; return true; }
-function saveCloudCreds(id,key){ cloudEnabled=true; }
-function clearCloudCreds(){ cloudEnabled=false; } // "Trennen" = nur lokal speichern
+function loadCloudCreds(){
+  try{
+    const c=JSON.parse(localStorage.getItem(CRED_KEY)||'null');
+    if(c && c.secret){
+      APP_SECRET=c.secret;
+      cloudEnabled=true;
+      return true;
+    }
+  }catch(e){}
+  return false;
+}
+
+function saveCloudCreds(secret){
+  localStorage.setItem(CRED_KEY,JSON.stringify({secret:secret.trim()}));
+  loadCloudCreds();
+}
+
+function clearCloudCreds(){
+  localStorage.removeItem(CRED_KEY);
+  APP_SECRET=null;
+  cloudEnabled=false;
+}
 
 const ALL_PLATFORMS=[
   {group:'PC Launcher', items:['Steam','GOG','Epic Games Store','EA App','Ubisoft Connect','Battle.net','Xbox PC / Game Pass','PlayStation PC']},
@@ -1964,8 +1976,7 @@ function closeCsvProgress(){
 
 // ─── CLOUD SETUP MODAL ────────────────────────────────────────────────────
 function openCloudModal(){
-  document.getElementById('cloudBinId').value=JSONBIN_ID||'';
-  document.getElementById('cloudKey').value=JSONBIN_KEY||'';
+  document.getElementById('cloudKey').value=APP_SECRET||'';
   document.getElementById('cloudModalMsg').textContent='';
   document.getElementById('cloudModal').classList.remove('hidden');
 }
@@ -1976,17 +1987,16 @@ document.getElementById('closeCloud').addEventListener('click',closeCloudModal);
 document.getElementById('cloudModal').addEventListener('click',e=>{if(e.target.id==='cloudModal')closeCloudModal();});
 
 document.getElementById('saveCloudCreds').addEventListener('click',async()=>{
-  const id=document.getElementById('cloudBinId').value.trim();
-  const key=document.getElementById('cloudKey').value.trim();
+  const secret=document.getElementById('cloudKey').value.trim();
   const msg=document.getElementById('cloudModalMsg');
-  if(!id||!key){msg.style.color='var(--red)';msg.textContent='Bitte beide Felder ausfüllen.';return;}
+  if(!secret){msg.style.color='var(--red)';msg.textContent='Bitte das Worker-Secret eingeben.';return;}
   msg.style.color='var(--accent3)';msg.textContent='Teste Verbindung…';
   // temporarily apply and test
-  saveCloudCreds(id,key);
+  saveCloudCreds(secret);
   const cloud=await loadCloud();
   if(cloudStatus==='error'){
     msg.style.color='var(--red)';
-    msg.textContent='❌ Verbindung fehlgeschlagen. Bitte Bin ID und Key prüfen.';
+    msg.textContent='❌ Verbindung fehlgeschlagen. Bitte das Secret prüfen.';
     return;
   }
   msg.style.color='var(--green)';
@@ -2012,7 +2022,6 @@ document.getElementById('disconnectCloud').addEventListener('click',()=>{
   setCloudStatus('notset');
   document.getElementById('cloudModalMsg').style.color='var(--muted)';
   document.getElementById('cloudModalMsg').textContent='Verbindung getrennt. Nur noch lokale Speicherung.';
-  document.getElementById('cloudBinId').value='';
   document.getElementById('cloudKey').value='';
 });
 
