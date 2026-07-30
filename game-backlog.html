@@ -202,7 +202,8 @@
   .detail-meta{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;}
   .detail-row{display:flex;align-items:flex-start;gap:8px;margin-bottom:8px;font-size:14px;color:var(--text);}
   .detail-row-label{color:var(--muted);font-size:12px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;min-width:80px;padding-top:1px;}
-  .detail-actions{display:flex;gap:10px;margin-top:18px;}
+  .detail-actions{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap;}
+  .detail-actions .btn{flex:1 1 calc(50% - 5px);min-width:0;}
   .empty-state{text-align:center;padding:60px 20px;color:var(--muted);}
   .empty-state .emoji{font-size:48px;margin-bottom:12px;}
 
@@ -312,7 +313,7 @@
         <input type="file" id="importFile" accept=".json" style="display:none;">
         <label class="hdr-btn" for="csvImportFile" style="background:rgba(124,58,237,0.15);border-color:rgba(124,58,237,0.4);color:#a78bfa;">📋 CSV importieren</label>
         <input type="file" id="csvImportFile" accept=".csv,.txt" style="display:none;">
-        <div style="color:var(--muted);font-size:12px;letter-spacing:1px;">powered by <span class="rawg-badge">RAWG</span> <span style="opacity:0.4;font-size:11px;margin-left:6px;">v1.3.3</span></div>
+        <div style="color:var(--muted);font-size:12px;letter-spacing:1px;">powered by <span class="rawg-badge">RAWG</span> <span style="opacity:0.4;font-size:11px;margin-left:6px;">v1.3.4</span></div>
       </div>
     </div>
   </header>
@@ -678,9 +679,9 @@
     <div class="detail-meta" id="detailMeta"></div>
     <div id="detailRows"></div>
     <div class="detail-actions">
-      <button class="btn btn-ghost" id="detailPlaylistBtn" style="flex:1;border-color:#fbbf24;color:#fbbf24;">🎯 Liste</button>
-      <button class="btn btn-primary" id="detailEditBtn" style="flex:1;">✏️ Bearbeiten</button>
-      <button class="btn btn-ghost" id="detailDeleteBtn" style="flex:1;color:var(--red);border-color:var(--red);">🗑 Löschen</button>
+      <button class="btn btn-ghost" id="detailPlaylistBtn" style="border-color:#fbbf24;color:#fbbf24;">🎯 Liste</button>
+      <button class="btn btn-primary" id="detailEditBtn">✏️ Bearbeiten</button>
+      <button class="btn btn-ghost" id="detailDeleteBtn" style="color:var(--red);border-color:var(--red);">🗑 Löschen</button>
     </div>
   </div>
 </div>
