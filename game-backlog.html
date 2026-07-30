@@ -258,6 +258,8 @@
   .rawg-results{position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--surface2);border:1px solid var(--accent);border-radius:10px;z-index:300;max-height:300px;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,0.6),0 0 20px rgba(0,212,255,0.1);}
   .rawg-results.hidden{display:none;}
   .rawg-item{display:flex;align-items:center;gap:12px;padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border);transition:background 0.15s;}
+  .rawg-item-owned{opacity:0.6;background:rgba(16,185,129,0.06);}
+  .rawg-item-owned:hover{opacity:0.85;}
   .rawg-item:last-child{border-bottom:none;}
   .rawg-item:hover{background:rgba(0,212,255,0.07);}
   .rawg-thumb{width:34px;height:46px;border-radius:5px;object-fit:cover;flex-shrink:0;background:var(--border);}
@@ -310,7 +312,7 @@
         <input type="file" id="importFile" accept=".json" style="display:none;">
         <label class="hdr-btn" for="csvImportFile" style="background:rgba(124,58,237,0.15);border-color:rgba(124,58,237,0.4);color:#a78bfa;">📋 CSV importieren</label>
         <input type="file" id="csvImportFile" accept=".csv,.txt" style="display:none;">
-        <div style="color:var(--muted);font-size:12px;letter-spacing:1px;">powered by <span class="rawg-badge">RAWG</span> <span style="opacity:0.4;font-size:11px;margin-left:6px;">v1.3.1</span></div>
+        <div style="color:var(--muted);font-size:12px;letter-spacing:1px;">powered by <span class="rawg-badge">RAWG</span> <span style="opacity:0.4;font-size:11px;margin-left:6px;">v1.3.3</span></div>
       </div>
     </div>
   </header>
@@ -321,16 +323,20 @@
       <button class="modal-close" id="closeCloud">✕</button>
       <div class="modal-title">☁ Cloud-Synchronisation</div>
       <p style="font-size:14px;color:var(--muted);line-height:1.6;margin-bottom:18px;">
-        Gib dein Worker-Secret ein, um deine Spieleliste zwischen
-        PC und Handy zu synchronisieren. Es wird <strong>nur auf
-        diesem Gerät</strong> gespeichert und ist nicht im App-Code sichtbar.
+        Gib deine JSONBin-Zugangsdaten ein, um deine Spieleliste zwischen
+        PC und Handy zu synchronisieren. Die Daten werden <strong>nur auf
+        diesem Gerät</strong> gespeichert und sind nicht im App-Code sichtbar.
       </p>
+      <div class="form-group" style="margin-bottom:12px;">
+        <label>Bin ID</label>
+        <input type="text" id="cloudBinId" placeholder="z.B. 6a087414250b1311c35c408b" autocomplete="off">
+      </div>
       <div class="form-group" style="margin-bottom:8px;">
-        <label>Worker Secret</label>
-        <input type="password" id="cloudKey" placeholder="dein Cloudflare-Worker-Secret" autocomplete="off">
+        <label>Master Key</label>
+        <input type="password" id="cloudKey" placeholder="$2a$10$…" autocomplete="off">
       </div>
       <p style="font-size:12px;color:var(--muted);margin-bottom:18px;">
-        Das ist das Secret, das du beim Cloudflare-Worker mit <code>wrangler secret put APP_SECRET</code> gesetzt hast.
+        Beide Werte findest du in deinem JSONBin-Account unter „API Keys" und „Bins".
       </p>
       <div style="display:flex;gap:10px;">
         <button class="btn btn-primary" id="saveCloudCreds" style="flex:1;">Verbinden</button>
@@ -568,6 +574,10 @@
         <div class="random-name" id="randomName">–</div>
         <div id="randomMeta" style="margin-top:8px;"></div>
       </div>
+      <div id="randomActions" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
+        <button class="btn btn-primary" id="randomOpenDetail" style="flex:1;min-width:120px;">👁 Details</button>
+        <button class="btn btn-ghost" id="randomOpenEdit" style="flex:1;min-width:120px;">✏️ Bearbeiten</button>
+      </div>
       <div style="display:flex;gap:10px;">
         <button class="btn btn-gold" id="rerollBtn" style="flex:1;">🎲 Nochmal würfeln</button>
         <button class="btn btn-ghost" id="backToFilters" style="flex:1;">⚙ Filter ändern</button>
@@ -726,14 +736,13 @@ function setAddFormOpen(open){
 const RAWG_KEY='43ad5537da7644b2a23d67661ae38c96';
 const STORAGE_KEY='gamevault_v4';
 
-// ─── CLOUD SYNC (Cloudflare KV Worker) ─────────────────────────────────────
-// The worker URL is public/non-sensitive and may live in code.
-// The SECRET is entered once per device and stored ONLY in this browser's
-// local storage — it never appears in this file or the public repo.
-const WORKER_URL='https://kv-store.neuzcore.workers.dev';
-const KV_LIBRARY=`${WORKER_URL}/gamingbacklog/library`;
+// ─── CLOUD SYNC (JSONBin) ─────────────────────────────────────────────────
+// Credentials are NOT stored in this file. They are entered once per device
+// and saved only in this browser's local storage.
 const CRED_KEY='gamevault_cloud_cred';
-let APP_SECRET=null;
+let JSONBIN_ID=null;
+let JSONBIN_KEY=null;
+let JSONBIN_URL=null;
 let cloudEnabled=false;
 let cloudStatus='idle'; // idle | loading | saving | ok | error
 let saveDebounce=null;
@@ -741,8 +750,10 @@ let saveDebounce=null;
 function loadCloudCreds(){
   try{
     const c=JSON.parse(localStorage.getItem(CRED_KEY)||'null');
-    if(c && c.secret){
-      APP_SECRET=c.secret;
+    if(c && c.id && c.key){
+      JSONBIN_ID=c.id;
+      JSONBIN_KEY=c.key;
+      JSONBIN_URL=`https://api.jsonbin.io/v3/b/${JSONBIN_ID}`;
       cloudEnabled=true;
       return true;
     }
@@ -750,14 +761,14 @@ function loadCloudCreds(){
   return false;
 }
 
-function saveCloudCreds(secret){
-  localStorage.setItem(CRED_KEY,JSON.stringify({secret:secret.trim()}));
+function saveCloudCreds(id,key){
+  localStorage.setItem(CRED_KEY,JSON.stringify({id:id.trim(),key:key.trim()}));
   loadCloudCreds();
 }
 
 function clearCloudCreds(){
   localStorage.removeItem(CRED_KEY);
-  APP_SECRET=null;
+  JSONBIN_ID=JSONBIN_KEY=JSONBIN_URL=null;
   cloudEnabled=false;
 }
 
@@ -841,9 +852,9 @@ async function saveCloud(g){
   if(!cloudEnabled) return;
   setCloudStatus('saving');
   try{
-    const res=await fetch(KV_LIBRARY,{
+    const res=await fetch(JSONBIN_URL,{
       method:'PUT',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+APP_SECRET},
+      headers:{'Content-Type':'application/json','X-Master-Key':JSONBIN_KEY},
       body:JSON.stringify({games:g, playlist:playlist}),
       signal:AbortSignal.timeout(10000),
     });
@@ -858,18 +869,13 @@ async function loadCloud(){
   if(!cloudEnabled) return null;
   setCloudStatus('loading');
   try{
-    const res=await fetch(KV_LIBRARY,{
-      headers:{'Authorization':'Bearer '+APP_SECRET},
+    const res=await fetch(`${JSONBIN_URL}/latest`,{
+      headers:{'X-Master-Key':JSONBIN_KEY},
       signal:AbortSignal.timeout(10000),
     });
-    if(res.status===404){
-      // Noch nichts im KV-Store → lokale Daten hochschieben, damit nichts verloren geht
-      setCloudStatus('ok');
-      if(games && games.length){ saveCloud(games); }
-      return null;
-    }
     if(!res.ok) throw new Error('load failed '+res.status);
-    const record=await res.json(); // Worker liefert die Daten direkt – kein data.record mehr
+    const data=await res.json();
+    const record=data.record||{};
     const cloudGames=Array.isArray(record.games)?record.games:(Array.isArray(record)?record:null);
     // Pull playlist if present
     if(record && record.playlist && typeof record.playlist==='object'){
@@ -1571,12 +1577,17 @@ async function doRawgSearch(q){
   if(!data.results.length){box.innerHTML='<div class="rawg-msg">Kein Ergebnis gefunden.</div>';return;}
 
   rawgResultCache=data.results;
+  // Build lookup sets of what's already in the library (by RAWG id and by lowercased title)
+  const ownedRawgIds=new Set(games.map(g=>g.rawgId).filter(Boolean));
+  const ownedTitles=new Set(games.map(g=>(g.title||'').toLowerCase().trim()));
   box.innerHTML=data.results.map((g,i)=>{
     const img=g.background_image?`<img class="rawg-thumb" src="${esc(g.background_image)}" loading="lazy">`:`<div class="rawg-thumb-ph">🎮</div>`;
     const plats=g.platforms?g.platforms.slice(0,3).map(p=>p.platform.name).join(', '):'';
     const year=g.released?g.released.split('-')[0]:'';
-    return`<div class="rawg-item" data-idx="${i}">
-      ${img}<div class="rawg-info"><div class="rawg-name">${esc(g.name)}</div><div class="rawg-meta">${year?year+' · ':''}${esc(plats)}</div></div>
+    const owned=ownedRawgIds.has(g.id)||ownedTitles.has((g.name||'').toLowerCase().trim());
+    const ownedBadge=owned?'<span style="background:var(--green);color:var(--bg);font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;margin-left:6px;letter-spacing:0.5px;">✓ in Bibliothek</span>':'';
+    return`<div class="rawg-item${owned?' rawg-item-owned':''}" data-idx="${i}">
+      ${img}<div class="rawg-info"><div class="rawg-name">${esc(g.name)}${ownedBadge}</div><div class="rawg-meta">${year?year+' · ':''}${esc(plats)}</div></div>
     </div>`;
   }).join('');
 
@@ -1588,6 +1599,15 @@ async function doRawgSearch(q){
 let currentRawgId=null;
 
 function pickRawg(g){
+  // Early duplicate warning: check by rawgId or by case-insensitive title
+  const titleLc=(g.name||'').toLowerCase().trim();
+  const dup=games.find(x=>(g.id && x.rawgId===g.id) || (x.title && x.title.toLowerCase().trim()===titleLc));
+  if(dup){
+    alert(`„${dup.title}" ist bereits in deiner Bibliothek (${STATUS_LABELS[dup.status]||dup.status}).\n\nDu kannst kein doppeltes Spiel hinzufügen.`);
+    document.getElementById('rawgResults').classList.add('hidden');
+    document.getElementById('rawgSearch').value='';
+    return;
+  }
   currentRawgId=g.id;
   document.getElementById('newTitle').value=g.name;
   if(g.background_image){
@@ -1623,6 +1643,13 @@ document.getElementById('cancelAdd').addEventListener('click',()=>{
 document.getElementById('saveGame').addEventListener('click',()=>{
   const title=document.getElementById('newTitle').value.trim();
   if(!title){document.getElementById('newTitle').focus();return;}
+  // Duplicate check: by rawgId (most reliable) or case-insensitive title
+  const titleLc=title.toLowerCase();
+  const dup=games.find(g=>(currentRawgId && g.rawgId===currentRawgId) || (g.title && g.title.toLowerCase().trim()===titleLc));
+  if(dup){
+    alert(`Dieses Spiel ist bereits in deiner Bibliothek:\n\n„${dup.title}" (${STATUS_LABELS[dup.status]||dup.status})`);
+    return;
+  }
   const rv=document.getElementById('newRating').value,pv=document.getElementById('newPlays').value;
   const ryv=document.getElementById('newReleaseYear').value;
   games.push({
@@ -1734,6 +1761,8 @@ function getRandomFilters(){
   return{statuses,platforms};
 }
 
+let lastRandomId=null;
+
 function doPickRandom(){
   const{statuses,platforms}=getRandomFilters();
   let pool=games.filter(g=>{
@@ -1744,14 +1773,19 @@ function doPickRandom(){
   });
   document.getElementById('randomFilters').classList.add('hidden');
   document.getElementById('randomResult').classList.remove('hidden');
+  const actions=document.getElementById('randomActions');
 
   if(!pool.length){
+    lastRandomId=null;
+    if(actions)actions.style.display='none';
     document.getElementById('randomCoverWrap').innerHTML='<div class="random-ph">🤷</div>';
     document.getElementById('randomName').textContent='Keine Spiele gefunden';
     document.getElementById('randomMeta').innerHTML='<span style="color:var(--muted);font-size:13px;">Passe die Filter an</span>';
     return;
   }
   const g=pool[Math.floor(Math.random()*pool.length)];
+  lastRandomId=g.id;
+  if(actions)actions.style.display='flex';
   document.getElementById('randomName').textContent=g.title;
   document.getElementById('randomCoverWrap').innerHTML=g.coverUrl
     ?`<img class="random-cover" src="${esc(g.coverUrl)}" onerror="this.outerHTML='<div class=random-ph>${g.emoji||'🎮'}</div>'">`
@@ -1780,6 +1814,16 @@ document.getElementById('randomBtn').addEventListener('click',()=>{
 
 document.getElementById('doRandomBtn').addEventListener('click',doPickRandom);
 document.getElementById('rerollBtn').addEventListener('click',doPickRandom);
+document.getElementById('randomOpenDetail').addEventListener('click',()=>{
+  if(lastRandomId==null)return;
+  document.getElementById('randomModal').classList.add('hidden');
+  openDetail(lastRandomId);
+});
+document.getElementById('randomOpenEdit').addEventListener('click',()=>{
+  if(lastRandomId==null)return;
+  document.getElementById('randomModal').classList.add('hidden');
+  openEdit(lastRandomId);
+});
 document.getElementById('backToFilters').addEventListener('click',()=>{
   document.getElementById('randomFilters').classList.remove('hidden');
   document.getElementById('randomResult').classList.add('hidden');
@@ -1976,7 +2020,8 @@ function closeCsvProgress(){
 
 // ─── CLOUD SETUP MODAL ────────────────────────────────────────────────────
 function openCloudModal(){
-  document.getElementById('cloudKey').value=APP_SECRET||'';
+  document.getElementById('cloudBinId').value=JSONBIN_ID||'';
+  document.getElementById('cloudKey').value=JSONBIN_KEY||'';
   document.getElementById('cloudModalMsg').textContent='';
   document.getElementById('cloudModal').classList.remove('hidden');
 }
@@ -1987,16 +2032,17 @@ document.getElementById('closeCloud').addEventListener('click',closeCloudModal);
 document.getElementById('cloudModal').addEventListener('click',e=>{if(e.target.id==='cloudModal')closeCloudModal();});
 
 document.getElementById('saveCloudCreds').addEventListener('click',async()=>{
-  const secret=document.getElementById('cloudKey').value.trim();
+  const id=document.getElementById('cloudBinId').value.trim();
+  const key=document.getElementById('cloudKey').value.trim();
   const msg=document.getElementById('cloudModalMsg');
-  if(!secret){msg.style.color='var(--red)';msg.textContent='Bitte das Worker-Secret eingeben.';return;}
+  if(!id||!key){msg.style.color='var(--red)';msg.textContent='Bitte beide Felder ausfüllen.';return;}
   msg.style.color='var(--accent3)';msg.textContent='Teste Verbindung…';
   // temporarily apply and test
-  saveCloudCreds(secret);
+  saveCloudCreds(id,key);
   const cloud=await loadCloud();
   if(cloudStatus==='error'){
     msg.style.color='var(--red)';
-    msg.textContent='❌ Verbindung fehlgeschlagen. Bitte das Secret prüfen.';
+    msg.textContent='❌ Verbindung fehlgeschlagen. Bitte Bin ID und Key prüfen.';
     return;
   }
   msg.style.color='var(--green)';
@@ -2022,6 +2068,7 @@ document.getElementById('disconnectCloud').addEventListener('click',()=>{
   setCloudStatus('notset');
   document.getElementById('cloudModalMsg').style.color='var(--muted)';
   document.getElementById('cloudModalMsg').textContent='Verbindung getrennt. Nur noch lokale Speicherung.';
+  document.getElementById('cloudBinId').value='';
   document.getElementById('cloudKey').value='';
 });
 
@@ -2172,7 +2219,7 @@ document.addEventListener('visibilitychange',()=>{
 // ─── PWA SERVICE WORKER ───────────────────────────────────────────────────
 // APP_VERSION: increment this number every time you upload a new version to GitHub.
 // This forces Firefox (and all browsers) to fetch the new sw.js and clear the old cache.
-const APP_VERSION = '1.1.0';
+const APP_VERSION = '1.0.9';
 
 if('serviceWorker' in navigator){
   window.addEventListener('load', async ()=>{
