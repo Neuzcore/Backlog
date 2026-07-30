@@ -313,7 +313,7 @@
         <input type="file" id="importFile" accept=".json" style="display:none;">
         <label class="hdr-btn" for="csvImportFile" style="background:rgba(124,58,237,0.15);border-color:rgba(124,58,237,0.4);color:#a78bfa;">📋 CSV importieren</label>
         <input type="file" id="csvImportFile" accept=".csv,.txt" style="display:none;">
-        <div style="color:var(--muted);font-size:12px;letter-spacing:1px;">powered by <span class="rawg-badge">RAWG</span> <span style="opacity:0.4;font-size:11px;margin-left:6px;">v1.3.4</span></div>
+        <div style="color:var(--muted);font-size:12px;letter-spacing:1px;">powered by <span class="rawg-badge">RAWG</span> <span style="opacity:0.4;font-size:11px;margin-left:6px;">v1.3.5</span></div>
       </div>
     </div>
   </header>
@@ -324,20 +324,16 @@
       <button class="modal-close" id="closeCloud">✕</button>
       <div class="modal-title">☁ Cloud-Synchronisation</div>
       <p style="font-size:14px;color:var(--muted);line-height:1.6;margin-bottom:18px;">
-        Gib deine JSONBin-Zugangsdaten ein, um deine Spieleliste zwischen
-        PC und Handy zu synchronisieren. Die Daten werden <strong>nur auf
-        diesem Gerät</strong> gespeichert und sind nicht im App-Code sichtbar.
+        Gib dein Worker-Secret ein, um deine Spieleliste zwischen
+        PC und Handy zu synchronisieren. Es wird <strong>nur auf
+        diesem Gerät</strong> gespeichert und ist nicht im App-Code sichtbar.
       </p>
-      <div class="form-group" style="margin-bottom:12px;">
-        <label>Bin ID</label>
-        <input type="text" id="cloudBinId" placeholder="z.B. 6a087414250b1311c35c408b" autocomplete="off">
-      </div>
       <div class="form-group" style="margin-bottom:8px;">
-        <label>Master Key</label>
-        <input type="password" id="cloudKey" placeholder="$2a$10$…" autocomplete="off">
+        <label>Worker Secret</label>
+        <input type="password" id="cloudSecret" placeholder="Dein Cloudflare Worker Secret" autocomplete="off">
       </div>
       <p style="font-size:12px;color:var(--muted);margin-bottom:18px;">
-        Beide Werte findest du in deinem JSONBin-Account unter „API Keys" und „Bins".
+        Dasselbe Secret wie in deinen anderen Apps (Bibliothek, Finanzen, …).
       </p>
       <div style="display:flex;gap:10px;">
         <button class="btn btn-primary" id="saveCloudCreds" style="flex:1;">Verbinden</button>
@@ -737,24 +733,22 @@ function setAddFormOpen(open){
 const RAWG_KEY='43ad5537da7644b2a23d67661ae38c96';
 const STORAGE_KEY='gamevault_v4';
 
-// ─── CLOUD SYNC (JSONBin) ─────────────────────────────────────────────────
-// Credentials are NOT stored in this file. They are entered once per device
+// ─── CLOUD SYNC (Cloudflare Worker KV) ────────────────────────────────────
+// The Worker secret is NOT stored in this file. It is entered once per device
 // and saved only in this browser's local storage.
-const CRED_KEY='gamevault_cloud_cred';
-let JSONBIN_ID=null;
-let JSONBIN_KEY=null;
-let JSONBIN_URL=null;
+const WORKER_URL='https://kv-store.neuzcore.workers.dev';
+const KV_LIBRARY=WORKER_URL+'/gamingbacklog/library';
+const CRED_KEY='gamevault_worker_secret';
+let WORKER_SECRET=null;
 let cloudEnabled=false;
 let cloudStatus='idle'; // idle | loading | saving | ok | error
 let saveDebounce=null;
 
 function loadCloudCreds(){
   try{
-    const c=JSON.parse(localStorage.getItem(CRED_KEY)||'null');
-    if(c && c.id && c.key){
-      JSONBIN_ID=c.id;
-      JSONBIN_KEY=c.key;
-      JSONBIN_URL=`https://api.jsonbin.io/v3/b/${JSONBIN_ID}`;
+    const s=localStorage.getItem(CRED_KEY);
+    if(s && s.trim()){
+      WORKER_SECRET=s.trim();
       cloudEnabled=true;
       return true;
     }
@@ -762,14 +756,14 @@ function loadCloudCreds(){
   return false;
 }
 
-function saveCloudCreds(id,key){
-  localStorage.setItem(CRED_KEY,JSON.stringify({id:id.trim(),key:key.trim()}));
+function saveCloudCreds(secret){
+  localStorage.setItem(CRED_KEY,secret.trim());
   loadCloudCreds();
 }
 
 function clearCloudCreds(){
   localStorage.removeItem(CRED_KEY);
-  JSONBIN_ID=JSONBIN_KEY=JSONBIN_URL=null;
+  WORKER_SECRET=null;
   cloudEnabled=false;
 }
 
@@ -853,9 +847,9 @@ async function saveCloud(g){
   if(!cloudEnabled) return;
   setCloudStatus('saving');
   try{
-    const res=await fetch(JSONBIN_URL,{
+    const res=await fetch(KV_LIBRARY,{
       method:'PUT',
-      headers:{'Content-Type':'application/json','X-Master-Key':JSONBIN_KEY},
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+WORKER_SECRET},
       body:JSON.stringify({games:g, playlist:playlist}),
       signal:AbortSignal.timeout(10000),
     });
@@ -870,14 +864,21 @@ async function loadCloud(){
   if(!cloudEnabled) return null;
   setCloudStatus('loading');
   try{
-    const res=await fetch(`${JSONBIN_URL}/latest`,{
-      headers:{'X-Master-Key':JSONBIN_KEY},
+    const res=await fetch(KV_LIBRARY,{
+      headers:{'Authorization':'Bearer '+WORKER_SECRET},
       signal:AbortSignal.timeout(10000),
     });
+    // 404 = key does not exist yet (empty cloud)
+    if(res.status===404){
+      setCloudStatus('ok');
+      if(games && games.length){ saveCloud(games); }
+      return null;
+    }
     if(!res.ok) throw new Error('load failed '+res.status);
-    const data=await res.json();
-    const record=data.record||{};
-    const cloudGames=Array.isArray(record.games)?record.games:(Array.isArray(record)?record:null);
+    // Worker returns the stored data directly (no .record wrapper)
+    const record=await res.json();
+    // Support both shapes: bare games array (initial migration) and {games, playlist}
+    const cloudGames=Array.isArray(record)?record:(Array.isArray(record?.games)?record.games:null);
     // Pull playlist if present
     if(record && record.playlist && typeof record.playlist==='object'){
       const p=record.playlist;
@@ -2021,8 +2022,7 @@ function closeCsvProgress(){
 
 // ─── CLOUD SETUP MODAL ────────────────────────────────────────────────────
 function openCloudModal(){
-  document.getElementById('cloudBinId').value=JSONBIN_ID||'';
-  document.getElementById('cloudKey').value=JSONBIN_KEY||'';
+  document.getElementById('cloudSecret').value=WORKER_SECRET||'';
   document.getElementById('cloudModalMsg').textContent='';
   document.getElementById('cloudModal').classList.remove('hidden');
 }
@@ -2033,17 +2033,16 @@ document.getElementById('closeCloud').addEventListener('click',closeCloudModal);
 document.getElementById('cloudModal').addEventListener('click',e=>{if(e.target.id==='cloudModal')closeCloudModal();});
 
 document.getElementById('saveCloudCreds').addEventListener('click',async()=>{
-  const id=document.getElementById('cloudBinId').value.trim();
-  const key=document.getElementById('cloudKey').value.trim();
+  const secret=document.getElementById('cloudSecret').value.trim();
   const msg=document.getElementById('cloudModalMsg');
-  if(!id||!key){msg.style.color='var(--red)';msg.textContent='Bitte beide Felder ausfüllen.';return;}
+  if(!secret){msg.style.color='var(--red)';msg.textContent='Bitte das Worker-Secret eingeben.';return;}
   msg.style.color='var(--accent3)';msg.textContent='Teste Verbindung…';
   // temporarily apply and test
-  saveCloudCreds(id,key);
+  saveCloudCreds(secret);
   const cloud=await loadCloud();
   if(cloudStatus==='error'){
     msg.style.color='var(--red)';
-    msg.textContent='❌ Verbindung fehlgeschlagen. Bitte Bin ID und Key prüfen.';
+    msg.textContent='❌ Verbindung fehlgeschlagen. Bitte Secret prüfen.';
     return;
   }
   msg.style.color='var(--green)';
@@ -2069,8 +2068,7 @@ document.getElementById('disconnectCloud').addEventListener('click',()=>{
   setCloudStatus('notset');
   document.getElementById('cloudModalMsg').style.color='var(--muted)';
   document.getElementById('cloudModalMsg').textContent='Verbindung getrennt. Nur noch lokale Speicherung.';
-  document.getElementById('cloudBinId').value='';
-  document.getElementById('cloudKey').value='';
+  document.getElementById('cloudSecret').value='';
 });
 
 // ─── COVER PICKER ─────────────────────────────────────────────────────────
