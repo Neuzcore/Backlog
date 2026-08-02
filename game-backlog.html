@@ -254,7 +254,7 @@
   .plat-opt-group{padding:6px 14px 2px;font-size:11px;color:var(--muted);font-weight:700;letter-spacing:1px;text-transform:uppercase;border-top:1px solid var(--border);}
   .plat-opt-group:first-child{border-top:none;}
 
-  /* RAWG AUTOCOMPLETE */
+  /* IGDB AUTOCOMPLETE */
   .rawg-wrap{position:relative;}
   .rawg-results{position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--surface2);border:1px solid var(--accent);border-radius:10px;z-index:300;max-height:300px;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,0.6),0 0 20px rgba(0,212,255,0.1);}
   .rawg-results.hidden{display:none;}
@@ -313,7 +313,7 @@
         <input type="file" id="importFile" accept=".json" style="display:none;">
         <label class="hdr-btn" for="csvImportFile" style="background:rgba(124,58,237,0.15);border-color:rgba(124,58,237,0.4);color:#a78bfa;">📋 CSV importieren</label>
         <input type="file" id="csvImportFile" accept=".csv,.txt" style="display:none;">
-        <div style="color:var(--muted);font-size:12px;letter-spacing:1px;">powered by <span class="rawg-badge">RAWG</span> <span style="opacity:0.4;font-size:11px;margin-left:6px;">v1.3.5</span></div>
+        <div style="color:var(--muted);font-size:12px;letter-spacing:1px;">powered by <span class="rawg-badge">IGDB</span> <span style="opacity:0.4;font-size:11px;margin-left:6px;">v1.4.0</span></div>
       </div>
     </div>
   </header>
@@ -412,7 +412,7 @@
   <div class="add-form" id="addForm">
     <div class="form-title">⬡ Neues Spiel hinzufügen</div>
     <div class="form-group" style="margin-bottom:12px;">
-      <label>Spiel in RAWG-Datenbank suchen <span class="rawg-badge">LIVE</span></label>
+      <label>Spiel in IGDB suchen <span class="rawg-badge">LIVE</span></label>
       <div class="rawg-wrap">
         <input type="text" id="rawgSearch" placeholder="Titel tippen – Cover, Genre & Plattform werden automatisch geladen…" autocomplete="off">
         <div class="rawg-results hidden" id="rawgResults"></div>
@@ -426,7 +426,7 @@
       <div style="flex:1;">
         <div class="form-group">
           <label>Spieltitel *</label>
-          <input type="text" id="newTitle" placeholder="Wird aus RAWG übernommen oder manuell eingeben">
+          <input type="text" id="newTitle" placeholder="Wird aus IGDB übernommen oder manuell eingeben">
         </div>
       </div>
     </div>
@@ -730,7 +730,6 @@ function setAddFormOpen(open){
   f.classList.toggle('open',open);
 }
 // ─── CONFIG ───────────────────────────────────────────────────────────────
-const RAWG_KEY='43ad5537da7644b2a23d67661ae38c96';
 const STORAGE_KEY='gamevault_v4';
 
 // ─── CLOUD SYNC (Cloudflare Worker KV) ────────────────────────────────────
@@ -738,6 +737,8 @@ const STORAGE_KEY='gamevault_v4';
 // and saved only in this browser's local storage.
 const WORKER_URL='https://kv-store.neuzcore.workers.dev';
 const KV_LIBRARY=WORKER_URL+'/gamingbacklog/library';
+const IGDB_SEARCH_URL=WORKER_URL+'/igdb/search';
+const IGDB_ARTWORK_URL=WORKER_URL+'/igdb/artwork';
 const CRED_KEY='gamevault_worker_secret';
 let WORKER_SECRET=null;
 let cloudEnabled=false;
@@ -779,16 +780,25 @@ const ALL_PLATFORM_NAMES=ALL_PLATFORMS.flatMap(g=>g.items);
 
 const STATUS_LABELS={playing:'Aktuell',beaten:'Durchgespielt',backlog:'Backlog',wishlist:'Wunschliste',dropped:'Abgebrochen'};
 
+// IGDB liefert Plattform-/Genre-Namen (keine Slugs wie RAWG)
 const PLATFORM_MAP={
-  'PC':'PC','macOS':'Mac','iOS':'Mobile','Android':'Mobile',
-  'PlayStation 2':'PlayStation 2','PlayStation 3':'PlayStation 3','PlayStation 4':'PlayStation 4','PlayStation 5':'PlayStation 5','PSP':'PSP','PS Vita':'PS Vita',
-  'Xbox':'Xbox','Xbox 360':'Xbox 360','Xbox One':'Xbox One','Xbox Series S/X':'Xbox Series X/S',
-  'Nintendo 64':'Nintendo 64','GameCube':'GameCube','Wii':'Wii','Wii U':'Wii U','Nintendo Switch':'Nintendo Switch','Nintendo Switch 2':'Nintendo Switch 2','Game Boy Advance':'Game Boy / GBA','Nintendo DS':'Nintendo DS','Nintendo 3DS':'Nintendo 3DS',
-  'SEGA Mega Drive':'SEGA Mega Drive','SEGA Saturn':'SEGA Saturn','Dreamcast':'SEGA Dreamcast',
+  'PC (Microsoft Windows)':'PC','Mac':'Mac','iOS':'Mobile','Android':'Mobile','Linux':'PC',
+  'PlayStation 2':'PlayStation 2','PlayStation 3':'PlayStation 3','PlayStation 4':'PlayStation 4','PlayStation 5':'PlayStation 5',
+  'PlayStation Portable':'PSP','PlayStation Vita':'PS Vita',
+  'Xbox':'Xbox','Xbox 360':'Xbox 360','Xbox One':'Xbox One','Xbox Series X|S':'Xbox Series X/S','Xbox Series X':'Xbox Series X/S',
+  'Nintendo 64':'Nintendo 64','Nintendo GameCube':'GameCube','Wii':'Wii','Wii U':'Wii U',
+  'Nintendo Switch':'Nintendo Switch','Nintendo Switch 2':'Nintendo Switch 2',
+  'Game Boy Advance':'Game Boy / GBA','Game Boy Color':'Game Boy / GBA','Game Boy':'Game Boy / GBA',
+  'Nintendo DS':'Nintendo DS','Nintendo 3DS':'Nintendo 3DS',
+  'Sega Mega Drive/Genesis':'SEGA Mega Drive','Sega Saturn':'SEGA Saturn','Dreamcast':'SEGA Dreamcast',
 };
 const GENRE_MAP={
-  'action':'Action','role-playing-games-rpg':'RPG','adventure':'Adventure','strategy':'Strategie',
-  'shooter':'Shooter','platformer':'Platformer','simulation':'Simulation','sports':'Sport','puzzle':'Puzzle',
+  'Adventure':'Adventure','Role-playing (RPG)':'RPG','Shooter':'Shooter','Platform':'Platformer',
+  'Puzzle':'Puzzle','Racing':'Rennspiel','Simulator':'Simulation','Sport':'Sport',
+  'Strategy':'Strategie','Real Time Strategy (RTS)':'Strategie','Turn-based strategy (TBS)':'Strategie','Tactical':'Strategie',
+  'Fighting':'Action','Hack and slash/Beat \'em up':'Action','Arcade':'Action','Music':'Sonstige',
+  'Point-and-click':'Adventure','Visual Novel':'Adventure','Indie':'Sonstige','Card & Board Game':'Sonstige',
+  'Quiz/Trivia':'Puzzle','Pinball':'Sonstige','MOBA':'Strategie',
 };
 
 // ─── DATA ─────────────────────────────────────────────────────────────────
@@ -1550,7 +1560,7 @@ document.getElementById('detailDeleteBtn').addEventListener('click',()=>{
   render();
 });
 
-// ─── RAWG SEARCH ──────────────────────────────────────────────────────────
+// ─── IGDB SEARCH ──────────────────────────────────────────────────────────
 let rawgTimer=null;
 document.getElementById('rawgSearch').addEventListener('input',function(){
   clearTimeout(rawgTimer);
@@ -1558,7 +1568,11 @@ document.getElementById('rawgSearch').addEventListener('input',function(){
   const box=document.getElementById('rawgResults');
   if(q.length<2){box.classList.add('hidden');return;}
   box.classList.remove('hidden');
-  box.innerHTML='<div class="rawg-msg">🔍 Suche in RAWG-Datenbank…</div>';
+  if(!cloudEnabled){
+    box.innerHTML='<div class="rawg-msg">🔑 Suche benötigt die Cloud-Verbindung.<br><small style="color:var(--muted)">Oben auf den Cloud-Status tippen und Worker-Secret eintragen.</small></div>';
+    return;
+  }
+  box.innerHTML='<div class="rawg-msg">🔍 Suche in IGDB…</div>';
   rawgTimer=setTimeout(()=>doRawgSearch(q),420);
 });
 
@@ -1566,27 +1580,31 @@ let rawgResultCache=[];
 
 async function doRawgSearch(q){
   const box=document.getElementById('rawgResults');
-  const rawgUrl=`https://api.rawg.io/api/games?key=${RAWG_KEY}&search=${encodeURIComponent(q)}&page_size=15&search_precise=false&fields=name,background_image,released,platforms,genres,developers`;
-  const strategies=[
-    async()=>{const r=await fetch(rawgUrl,{signal:AbortSignal.timeout(5000)});if(!r.ok)throw new Error();return r.json();},
-    async()=>{const r=await fetch(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(rawgUrl)}`,{signal:AbortSignal.timeout(7000)});if(!r.ok)throw new Error();return r.json();},
-    async()=>{const r=await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(rawgUrl)}`,{signal:AbortSignal.timeout(7000)});if(!r.ok)throw new Error();const j=await r.json();return JSON.parse(j.contents);},
-    async()=>{const r=await fetch(`https://corsproxy.io/?${encodeURIComponent(rawgUrl)}`,{signal:AbortSignal.timeout(7000)});if(!r.ok)throw new Error();return r.json();},
-  ];
   let data=null;
-  for(const fn of strategies){try{data=await fn();if(data&&data.results)break;}catch(e){continue;}}
-  if(!data||!data.results){box.innerHTML='<div class="rawg-msg">❌ RAWG-Suche nicht erreichbar.<br><small style="color:var(--muted)">Spiel manuell eingeben oder Seite neu laden.</small></div>';return;}
-  if(!data.results.length){box.innerHTML='<div class="rawg-msg">Kein Ergebnis gefunden.</div>';return;}
+  try{
+    const res=await fetch(`${IGDB_SEARCH_URL}?q=${encodeURIComponent(q)}`,{
+      headers:{'Authorization':'Bearer '+WORKER_SECRET},
+      signal:AbortSignal.timeout(10000),
+    });
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    data=await res.json();
+  }catch(e){
+    box.innerHTML='<div class="rawg-msg">❌ Suche nicht erreichbar.<br><small style="color:var(--muted)">Spiel manuell eingeben oder später erneut versuchen.</small></div>';
+    return;
+  }
+  const results=data&&Array.isArray(data.results)?data.results:null;
+  if(!results){box.innerHTML='<div class="rawg-msg">❌ Unerwartete Antwort der Suche.</div>';return;}
+  if(!results.length){box.innerHTML='<div class="rawg-msg">Kein Ergebnis gefunden.</div>';return;}
 
-  rawgResultCache=data.results;
-  // Build lookup sets of what's already in the library (by RAWG id and by lowercased title)
-  const ownedRawgIds=new Set(games.map(g=>g.rawgId).filter(Boolean));
+  rawgResultCache=results;
+  // Build lookup sets of what's already in the library (by IGDB id and by lowercased title)
+  const ownedIgdbIds=new Set(games.map(g=>g.igdbId).filter(Boolean));
   const ownedTitles=new Set(games.map(g=>(g.title||'').toLowerCase().trim()));
-  box.innerHTML=data.results.map((g,i)=>{
-    const img=g.background_image?`<img class="rawg-thumb" src="${esc(g.background_image)}" loading="lazy">`:`<div class="rawg-thumb-ph">🎮</div>`;
-    const plats=g.platforms?g.platforms.slice(0,3).map(p=>p.platform.name).join(', '):'';
-    const year=g.released?g.released.split('-')[0]:'';
-    const owned=ownedRawgIds.has(g.id)||ownedTitles.has((g.name||'').toLowerCase().trim());
+  box.innerHTML=results.map((g,i)=>{
+    const img=g.cover?`<img class="rawg-thumb" src="${esc(g.cover)}" loading="lazy">`:`<div class="rawg-thumb-ph">🎮</div>`;
+    const plats=(g.platforms||[]).slice(0,3).join(', ');
+    const year=g.year||'';
+    const owned=ownedIgdbIds.has(g.id)||ownedTitles.has((g.name||'').toLowerCase().trim());
     const ownedBadge=owned?'<span style="background:var(--green);color:var(--bg);font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;margin-left:6px;letter-spacing:0.5px;">✓ in Bibliothek</span>':'';
     return`<div class="rawg-item${owned?' rawg-item-owned':''}" data-idx="${i}">
       ${img}<div class="rawg-info"><div class="rawg-name">${esc(g.name)}${ownedBadge}</div><div class="rawg-meta">${year?year+' · ':''}${esc(plats)}</div></div>
@@ -1601,9 +1619,9 @@ async function doRawgSearch(q){
 let currentRawgId=null;
 
 function pickRawg(g){
-  // Early duplicate warning: check by rawgId or by case-insensitive title
+  // Early duplicate warning: check by IGDB id or by case-insensitive title
   const titleLc=(g.name||'').toLowerCase().trim();
-  const dup=games.find(x=>(g.id && x.rawgId===g.id) || (x.title && x.title.toLowerCase().trim()===titleLc));
+  const dup=games.find(x=>(g.id && x.igdbId===g.id) || (x.title && x.title.toLowerCase().trim()===titleLc));
   if(dup){
     alert(`„${dup.title}" ist bereits in deiner Bibliothek (${STATUS_LABELS[dup.status]||dup.status}).\n\nDu kannst kein doppeltes Spiel hinzufügen.`);
     document.getElementById('rawgResults').classList.add('hidden');
@@ -1612,18 +1630,19 @@ function pickRawg(g){
   }
   currentRawgId=g.id;
   document.getElementById('newTitle').value=g.name;
-  if(g.background_image){
-    document.getElementById('newCoverUrl').value=g.background_image;
-    const p=document.getElementById('coverPreview');p.src=g.background_image;p.classList.add('visible');
+  if(g.cover){
+    document.getElementById('newCoverUrl').value=g.cover;
+    const p=document.getElementById('coverPreview');p.src=g.cover;p.classList.add('visible');
     document.getElementById('coverPickerHint').style.display='block';
   }
   // Release year
-  if(g.released){
-    const yr=g.released.split('-')[0];
-    document.getElementById('newReleaseYear').value=yr;
+  if(g.year){
+    setSelect('newReleaseYear',String(g.year));
   }
-  // Genre
-  if(g.genres){for(const gen of g.genres){const m=GENRE_MAP[gen.slug];if(m){setSelect('newGenre',m);break;}}}
+  // Genre — first match wins
+  if(Array.isArray(g.genres)){
+    for(const name of g.genres){const m=GENRE_MAP[name];if(m){setSelect('newGenre',m);break;}}
+  }
   // Platforms intentionally left empty — user fills manually
   document.getElementById('rawgResults').classList.add('hidden');
   document.getElementById('rawgSearch').value='';
@@ -1645,9 +1664,9 @@ document.getElementById('cancelAdd').addEventListener('click',()=>{
 document.getElementById('saveGame').addEventListener('click',()=>{
   const title=document.getElementById('newTitle').value.trim();
   if(!title){document.getElementById('newTitle').focus();return;}
-  // Duplicate check: by rawgId (most reliable) or case-insensitive title
+  // Duplicate check: by IGDB id (most reliable) or case-insensitive title
   const titleLc=title.toLowerCase();
-  const dup=games.find(g=>(currentRawgId && g.rawgId===currentRawgId) || (g.title && g.title.toLowerCase().trim()===titleLc));
+  const dup=games.find(g=>(currentRawgId && g.igdbId===currentRawgId) || (g.title && g.title.toLowerCase().trim()===titleLc));
   if(dup){
     alert(`Dieses Spiel ist bereits in deiner Bibliothek:\n\n„${dup.title}" (${STATUS_LABELS[dup.status]||dup.status})`);
     return;
@@ -1666,7 +1685,7 @@ document.getElementById('saveGame').addEventListener('click',()=>{
     beatenYears:newYearPicker?newYearPicker.getSelected():[],
     notes:document.getElementById('newNotes').value.trim(),
     coverUrl:document.getElementById('newCoverUrl').value||'',
-    rawgId:currentRawgId||null,
+    igdbId:currentRawgId||null,
   });
   setAddFormOpen(false);save(games);clearAddForm();render();
 });
@@ -1702,7 +1721,7 @@ function openEdit(id){
   document.getElementById('editCoverUrl').value=g.coverUrl||'';
   const img=document.getElementById('editCoverImg');
   if(g.coverUrl){img.src=g.coverUrl;img.style.display='block';}else{img.style.display='none';}
-  currentRawgId=g.rawgId||null;
+  currentRawgId=g.igdbId||null;
   setSelect('editStatus',g.status);setSelect('editGenre',g.genre);
   if(editPlatPicker)editPlatPicker.setSelected(getPlatforms(g));
   if(editYearPicker)editYearPicker.setSelected(Array.isArray(g.beatenYears)?g.beatenYears:[]);
@@ -1916,8 +1935,8 @@ document.getElementById('csvImportFile').addEventListener('change',function(){
     if(!newTitles.length){alert(`Alle ${dupes} Spiele sind bereits in deiner Bibliothek vorhanden.`);return;}
 
     const msg=dupes>0
-      ?`${titles.length} Spiele gefunden.\n${dupes} bereits vorhanden (werden übersprungen).\n${newTitles.length} neue Spiele werden importiert mit RAWG-Daten.\n\nJetzt starten?`
-      :`${newTitles.length} Spiele werden mit RAWG-Daten importiert.\n\nJetzt starten?`;
+      ?`${titles.length} Spiele gefunden.\n${dupes} bereits vorhanden (werden übersprungen).\n${newTitles.length} neue Spiele werden importiert mit IGDB-Daten.\n\nJetzt starten?`
+      :`${newTitles.length} Spiele werden mit IGDB-Daten importiert.\n\nJetzt starten?`;
     if(!confirm(msg))return;
 
     // Show progress modal
@@ -1936,48 +1955,50 @@ document.getElementById('csvImportFile').addEventListener('change',function(){
 
       let gameData=null;
       try{
-        const rawgUrl=`https://api.rawg.io/api/games?key=${RAWG_KEY}&search=${encodeURIComponent(title)}&page_size=1&search_precise=false`;
-        const strategies=[
-          async()=>{const r=await fetch(rawgUrl,{signal:AbortSignal.timeout(5000)});if(!r.ok)throw new Error();return r.json();},
-          async()=>{const r=await fetch(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(rawgUrl)}`,{signal:AbortSignal.timeout(7000)});if(!r.ok)throw new Error();return r.json();},
-          async()=>{const r=await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(rawgUrl)}`,{signal:AbortSignal.timeout(7000)});if(!r.ok)throw new Error();const j=await r.json();return JSON.parse(j.contents);},
-        ];
-        let data=null;
-        for(const fn of strategies){try{data=await fn();if(data&&data.results)break;}catch(e){continue;}}
-        if(data&&data.results&&data.results.length>0) gameData=data.results[0];
+        if(cloudEnabled){
+          const res=await fetch(`${IGDB_SEARCH_URL}?q=${encodeURIComponent(title)}`,{
+            headers:{'Authorization':'Bearer '+WORKER_SECRET},
+            signal:AbortSignal.timeout(10000),
+          });
+          if(res.ok){
+            const data=await res.json();
+            if(Array.isArray(data.results)&&data.results.length>0) gameData=data.results[0];
+          }
+        }
       }catch(e){}
 
       let genre='';
-      if(gameData?.genres?.length){
-        const m=GENRE_MAP[gameData.genres[0].slug];
-        if(m)genre=m;
+      if(Array.isArray(gameData?.genres)){
+        for(const name of gameData.genres){const m=GENRE_MAP[name];if(m){genre=m;break;}}
       }
 
       // Use nextId++ and immediately increment to guarantee unique IDs
       const newId=nextId++;
       newGames.push({
         id:newId,
-        title:gameData?gameData.name:title, // RAWG name or original CSV title
+        title:gameData?gameData.name:title, // IGDB name or original CSV title
         status:'backlog',
         platforms:[],
         genre,
+        releaseYear:gameData?.year||null,
         rating:null,
         plays:0,
         emoji:'🎮',
         notes:'',
-        coverUrl:gameData?.background_image||'',
+        coverUrl:gameData?.cover||'',
+        igdbId:gameData?.id||null,
       });
 
       if(gameData)imported++;else notFound++;
-      // Wait between requests to avoid rate limiting and keep order correct
-      await new Promise(r=>setTimeout(r,400));
+      // Small pause between requests
+      await new Promise(r=>setTimeout(r,250));
     }
 
     games=games.concat(newGames);
     save(games);
     render();
     closeCsvProgress();
-    alert(`✅ CSV Import abgeschlossen!\n\n${imported} Spiele mit RAWG-Daten gefunden\n${notFound} Spiele ohne RAWG-Treffer (Titel trotzdem importiert)\n${dupes} Duplikate übersprungen`);
+    alert(`✅ CSV Import abgeschlossen!\n\n${imported} Spiele mit IGDB-Daten gefunden\n${notFound} Spiele ohne IGDB-Treffer (Titel trotzdem importiert)\n${dupes} Duplikate übersprungen`);
   };
   reader.readAsText(file);this.value='';
 });
@@ -1995,7 +2016,7 @@ function openCsvProgress(total){
         <div id="csvProgressFill" style="height:100%;background:var(--accent);border-radius:4px;width:0%;transition:width 0.3s;"></div>
       </div>
       <p id="csvProgressCount" style="font-size:13px;color:var(--muted);">0 / ${total}</p>
-      <p style="font-size:12px;color:var(--muted);margin-top:12px;">RAWG wird für jedes Spiel abgefragt — bitte warten…</p>
+      <p style="font-size:12px;color:var(--muted);margin-top:12px;">IGDB wird für jedes Spiel abgefragt — bitte warten…</p>
     </div>`;
     document.body.appendChild(m);
   }else{
@@ -2087,10 +2108,10 @@ async function openCoverPicker(target){
   const currentCover=document.getElementById(getCoverInputId()).value||'';
   document.getElementById('customCoverUrl').value=currentCover;
 
-  // No RAWG id (manually created game) → only custom URL available
-  if(!currentRawgId){
+  // No IGDB id (manually created game) or no cloud → only custom URL available
+  if(!currentRawgId||!cloudEnabled){
     content.className='';
-    content.innerHTML='<p style="color:var(--muted);text-align:center;padding:16px;font-size:13px;">Für dieses Spiel sind keine RAWG-Bilder verfügbar.<br>Du kannst oben eine eigene Bild-URL einfügen.</p>';
+    content.innerHTML='<p style="color:var(--muted);text-align:center;padding:16px;font-size:13px;">Für dieses Spiel sind keine Bilder aus der Datenbank verfügbar.<br>Du kannst oben eine eigene Bild-URL einfügen.</p>';
     return;
   }
 
@@ -2098,24 +2119,25 @@ async function openCoverPicker(target){
   content.innerHTML='🔍 Lade Cover-Bilder…';
 
   try{
-    const rawgUrl=`https://api.rawg.io/api/games/${currentRawgId}/screenshots?key=${RAWG_KEY}&page_size=20`;
-    const strategies=[
-      async()=>{const r=await fetch(rawgUrl,{signal:AbortSignal.timeout(5000)});if(!r.ok)throw new Error();return r.json();},
-      async()=>{const r=await fetch(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(rawgUrl)}`,{signal:AbortSignal.timeout(7000)});if(!r.ok)throw new Error();return r.json();},
-      async()=>{const r=await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(rawgUrl)}`,{signal:AbortSignal.timeout(7000)});if(!r.ok)throw new Error();const j=await r.json();return JSON.parse(j.contents);},
-    ];
-    let data=null;
-    for(const fn of strategies){try{data=await fn();if(data)break;}catch(e){continue;}}
+    let urls=[];
+    try{
+      const res=await fetch(`${IGDB_ARTWORK_URL}?id=${encodeURIComponent(currentRawgId)}`,{
+        headers:{'Authorization':'Bearer '+WORKER_SECRET},
+        signal:AbortSignal.timeout(10000),
+      });
+      if(res.ok){
+        const data=await res.json();
+        if(Array.isArray(data.images)) urls=data.images;
+      }
+    }catch(e){/* fall through to empty list */}
 
     const images=[];
     if(currentCover) images.push({url:currentCover,label:'Aktuelles Cover'});
-    if(data?.results){
-      data.results.forEach(s=>{ if(s.image&&!images.find(i=>i.url===s.image)) images.push({url:s.image,label:'Screenshot'}); });
-    }
+    urls.forEach(u=>{ if(u&&!images.find(i=>i.url===u)) images.push({url:u,label:'Bild'}); });
 
     if(!images.length){
       content.className='';
-      content.innerHTML='<p style="color:var(--muted);text-align:center;padding:16px;font-size:13px;">Keine RAWG-Bilder gefunden – nutze die eigene Bild-URL oben.</p>';
+      content.innerHTML='<p style="color:var(--muted);text-align:center;padding:16px;font-size:13px;">Keine Bilder gefunden – nutze die eigene Bild-URL oben.</p>';
       return;
     }
 
