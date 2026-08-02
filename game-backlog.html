@@ -313,7 +313,8 @@
         <input type="file" id="importFile" accept=".json" style="display:none;">
         <label class="hdr-btn" for="csvImportFile" style="background:rgba(124,58,237,0.15);border-color:rgba(124,58,237,0.4);color:#a78bfa;">📋 CSV importieren</label>
         <input type="file" id="csvImportFile" accept=".csv,.txt" style="display:none;">
-        <div style="color:var(--muted);font-size:12px;letter-spacing:1px;">powered by <span class="rawg-badge">IGDB</span> <span style="opacity:0.4;font-size:11px;margin-left:6px;">v1.4.0</span></div>
+        <button class="hdr-btn" id="linkIgdbBtn" style="background:rgba(0,212,255,0.12);border-color:rgba(0,212,255,0.35);color:var(--accent);">🔗 IGDB verknüpfen <span id="linkIgdbCount" style="opacity:0.7;font-size:11px;"></span></button>
+        <div style="color:var(--muted);font-size:12px;letter-spacing:1px;">powered by <span class="rawg-badge">IGDB</span> <span style="opacity:0.4;font-size:11px;margin-left:6px;">v1.4.1</span></div>
       </div>
     </div>
   </header>
@@ -720,6 +721,39 @@
   </div>
 </div>
 
+
+<!-- IGDB VERKNÜPFEN -->
+<div class="modal-overlay hidden" id="linkModal">
+  <div class="modal" style="max-width:620px;">
+    <button class="modal-close" id="linkCloseBtn">✕</button>
+    <div class="modal-title">🔗 Mit IGDB verknüpfen</div>
+
+    <div id="linkProgress" style="font-size:12px;color:var(--muted);margin-bottom:10px;"></div>
+
+    <div id="linkCurrent" style="display:flex;gap:12px;align-items:center;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:12px;">
+      <div id="linkCurrentCover" style="flex-shrink:0;"></div>
+      <div style="flex:1;min-width:0;">
+        <div id="linkCurrentTitle" style="font-weight:600;font-size:15px;"></div>
+        <div id="linkCurrentMeta" style="font-size:12px;color:var(--muted);margin-top:2px;"></div>
+      </div>
+    </div>
+
+    <div class="form-group" style="margin-bottom:10px;">
+      <label>Suchbegriff</label>
+      <div style="display:flex;gap:8px;">
+        <input type="text" id="linkQuery" autocomplete="off" style="flex:1;">
+        <button class="btn btn-ghost" id="linkSearchBtn" style="white-space:nowrap;">🔍 Suchen</button>
+      </div>
+    </div>
+
+    <div id="linkResults" style="max-height:38vh;overflow-y:auto;display:flex;flex-direction:column;gap:6px;margin-bottom:12px;"></div>
+
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <button class="btn btn-ghost" id="linkSkipBtn" style="flex:1;min-width:130px;">⏭ Überspringen</button>
+      <button class="btn btn-ghost" id="linkAbortBtn" style="flex:1;min-width:130px;">Beenden</button>
+    </div>
+  </div>
+</div>
 
 <script>
 
@@ -2183,10 +2217,136 @@ document.getElementById('playlistPickSearch').addEventListener('input',e=>render
 document.getElementById('playlistRandomPool').addEventListener('change',updatePlaylistRandomInfo);
 document.getElementById('playlistRandomConfirm').addEventListener('click',runPlaylistRandom);
 
+// ─── IGDB VERKNÜPFEN ──────────────────────────────────────────────────────
+let linkQueue=[], linkIndex=0, linkResultCache=[];
+
+function gamesNeedingLink(){
+  return games.filter(g=>!g.igdbId);
+}
+
+function updateLinkBadge(){
+  const el=document.getElementById('linkIgdbCount');
+  if(!el)return;
+  const n=gamesNeedingLink().length;
+  el.textContent=n?`(${n})`:'';
+}
+
+function openLinkWizard(){
+  if(!cloudEnabled){
+    alert('Die Verknüpfung benötigt die Cloud-Verbindung.\n\nOben auf den Cloud-Status tippen und das Worker-Secret eintragen.');
+    return;
+  }
+  linkQueue=gamesNeedingLink();
+  if(!linkQueue.length){
+    alert('Alle Spiele sind bereits mit IGDB verknüpft.');
+    return;
+  }
+  linkIndex=0;
+  document.getElementById('linkModal').classList.remove('hidden');
+  linkShowCurrent();
+}
+
+function closeLinkWizard(){
+  document.getElementById('linkModal').classList.add('hidden');
+  render();
+  updateLinkBadge();
+}
+
+function linkShowCurrent(){
+  // Skip entries that vanished or got linked in the meantime
+  while(linkIndex<linkQueue.length){
+    const q=linkQueue[linkIndex];
+    const live=games.find(g=>g.id===q.id);
+    if(live&&!live.igdbId)break;
+    linkIndex++;
+  }
+  if(linkIndex>=linkQueue.length){
+    alert('Fertig! Alle Spiele durchgegangen.');
+    closeLinkWizard();
+    return;
+  }
+  const g=games.find(x=>x.id===linkQueue[linkIndex].id);
+  document.getElementById('linkProgress').textContent=`Spiel ${linkIndex+1} von ${linkQueue.length}`;
+  document.getElementById('linkCurrentTitle').textContent=g.title;
+  const parts=[STATUS_LABELS[g.status]||g.status];
+  if(g.genre)parts.push(g.genre);
+  if(g.releaseYear)parts.push(g.releaseYear);
+  const plats=getPlatforms(g);
+  if(plats.length)parts.push(plats.join(', '));
+  document.getElementById('linkCurrentMeta').textContent=parts.join(' · ');
+  document.getElementById('linkCurrentCover').innerHTML=g.coverUrl
+    ? `<img src="${esc(g.coverUrl)}" style="width:40px;height:54px;object-fit:cover;border-radius:5px;border:1px solid var(--border);">`
+    : '<div style="width:40px;height:54px;border-radius:5px;background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:18px;border:1px solid var(--border);">🎮</div>';
+  document.getElementById('linkQuery').value=g.title;
+  linkRunSearch();
+}
+
+async function linkRunSearch(){
+  const box=document.getElementById('linkResults');
+  const q=document.getElementById('linkQuery').value.trim();
+  if(!q){box.innerHTML='<p style="color:var(--muted);font-size:13px;text-align:center;padding:12px;">Bitte einen Suchbegriff eingeben.</p>';return;}
+  box.innerHTML='<p style="color:var(--muted);font-size:13px;text-align:center;padding:12px;">🔍 Suche…</p>';
+  let results=null;
+  try{
+    const res=await fetch(`${IGDB_SEARCH_URL}?q=${encodeURIComponent(q)}`,{
+      headers:{'Authorization':'Bearer '+WORKER_SECRET},
+      signal:AbortSignal.timeout(10000),
+    });
+    if(res.ok){const d=await res.json();if(Array.isArray(d.results))results=d.results;}
+  }catch(e){}
+  if(!results){box.innerHTML='<p style="color:var(--red);font-size:13px;text-align:center;padding:12px;">Suche nicht erreichbar.</p>';return;}
+  if(!results.length){box.innerHTML='<p style="color:var(--muted);font-size:13px;text-align:center;padding:12px;">Kein Treffer. Suchbegriff anpassen oder überspringen.</p>';return;}
+
+  linkResultCache=results;
+  const usedIds=new Set(games.map(g=>g.igdbId).filter(Boolean));
+  box.innerHTML=results.map((r,i)=>{
+    const taken=usedIds.has(r.id);
+    const cover=r.cover
+      ? `<img src="${esc(r.cover)}" loading="lazy" style="width:36px;height:48px;object-fit:cover;border-radius:5px;flex-shrink:0;">`
+      : '<div style="width:36px;height:48px;border-radius:5px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">🎮</div>';
+    const meta=[r.year||'', (r.genres||[]).slice(0,2).join(', '), r.developer||''].filter(Boolean).join(' · ');
+    return `<div class="rawg-result" data-idx="${i}" style="${taken?'opacity:0.45;':''}">
+      ${cover}
+      <div style="flex:1;min-width:0;">
+        <div style="font-weight:600;font-size:14px;">${esc(r.name)}${taken?' <span style="font-size:10px;color:var(--muted);">(schon verknüpft)</span>':''}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px;">${esc(meta)}</div>
+      </div>
+    </div>`;
+  }).join('');
+  box.querySelectorAll('.rawg-result').forEach(el=>{
+    el.addEventListener('click',()=>linkApply(linkResultCache[parseInt(el.dataset.idx)]));
+  });
+}
+
+function linkApply(r){
+  if(!r)return;
+  const g=games.find(x=>x.id===linkQueue[linkIndex].id);
+  if(!g){linkIndex++;linkShowCurrent();return;}
+  // Übernimmt die Stammdaten aus IGDB. Persönliche Angaben (Status, Plattformen,
+  // Bewertung, Durchläufe, Notizen, Favorit) bleiben unangetastet.
+  g.igdbId=r.id;
+  g.title=r.name||g.title;
+  if(r.cover)g.coverUrl=r.cover;
+  if(r.year)g.releaseYear=r.year;
+  if(Array.isArray(r.genres)){
+    for(const name of r.genres){const m=GENRE_MAP[name];if(m){g.genre=m;break;}}
+  }
+  save(games);
+  linkIndex++;
+  linkShowCurrent();
+}
+
+document.getElementById('linkIgdbBtn').addEventListener('click',openLinkWizard);
+document.getElementById('linkSearchBtn').addEventListener('click',linkRunSearch);
+document.getElementById('linkQuery').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();linkRunSearch();}});
+document.getElementById('linkSkipBtn').addEventListener('click',()=>{linkIndex++;linkShowCurrent();});
+document.getElementById('linkAbortBtn').addEventListener('click',closeLinkWizard);
+document.getElementById('linkCloseBtn').addEventListener('click',closeLinkWizard);
+
 // ─── INIT ─────────────────────────────────────────────────────────────────
 // Force all forms and modals closed on every load
 setAddFormOpen(false);
-['cloudModal','coverPickerModal','randomModal','editModal','detailModal','playlistPickModal','playlistRandomModal'].forEach(id=>{
+['cloudModal','coverPickerModal','randomModal','editModal','detailModal','playlistPickModal','playlistRandomModal','linkModal'].forEach(id=>{
   const el=document.getElementById(id);
   if(el)el.classList.add('hidden');
 });
@@ -2197,6 +2357,7 @@ newYearPicker=buildYearPicker('newYearPicker','newYearInput','newYearDrop',[]);
 editYearPicker=buildYearPicker('editYearPicker','editYearInput','editYearDrop',[]);
 
 render(); // show local data immediately
+updateLinkBadge();
 
 loadCloudCreds(); // try to restore saved credentials
 
@@ -2213,6 +2374,7 @@ if(cloudEnabled){
       saveLocal(games);
       savePlaylistLocal(playlist);
       render();
+      updateLinkBadge();
     }
   })();
 }else{
@@ -2232,6 +2394,7 @@ document.addEventListener('visibilitychange',()=>{
         saveLocal(games);
         savePlaylistLocal(playlist);
         render();
+        updateLinkBadge();
       }
     })();
   }
