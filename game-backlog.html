@@ -137,6 +137,11 @@
   .game-tile-cover-ph{width:100%;flex:1;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:36px;min-height:0;}
 
   /* Title bar at bottom */
+  .tile-release{font-size:10px;font-weight:700;letter-spacing:0.3px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .tile-release.rel-out{color:var(--green);}
+  .tile-release.rel-soon{color:#fb923c;}
+  .tile-release.rel-future{color:var(--muted);}
+  .tile-release.rel-unknown{color:var(--muted);opacity:0.7;}
   .game-tile-footer{padding:8px 10px 7px;background:linear-gradient(0deg,rgba(8,11,20,0.98) 0%,rgba(8,11,20,0.85) 100%);flex-shrink:0;}
   .game-tile-title{font-size:14px;font-weight:700;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;color:var(--text);}
 
@@ -314,7 +319,7 @@
         <label class="hdr-btn" for="csvImportFile" style="background:rgba(124,58,237,0.15);border-color:rgba(124,58,237,0.4);color:#a78bfa;">📋 CSV importieren</label>
         <input type="file" id="csvImportFile" accept=".csv,.txt" style="display:none;">
         <button class="hdr-btn" id="linkIgdbBtn" style="background:rgba(0,212,255,0.12);border-color:rgba(0,212,255,0.35);color:var(--accent);">🔗 IGDB verknüpfen <span id="linkIgdbCount" style="opacity:0.7;font-size:11px;"></span></button>
-        <div style="color:var(--muted);font-size:12px;letter-spacing:1px;">powered by <span class="rawg-badge">IGDB</span> <span style="opacity:0.4;font-size:11px;margin-left:6px;">v1.4.2</span></div>
+        <div style="color:var(--muted);font-size:12px;letter-spacing:1px;">powered by <span class="rawg-badge">IGDB</span> <span style="opacity:0.4;font-size:11px;margin-left:6px;">v1.5.1</span></div>
       </div>
     </div>
   </header>
@@ -511,6 +516,11 @@
     </div>
     <p style="color:var(--muted);font-size:12px;margin:-6px 0 14px 0;">Die nächsten 5 Spiele in deiner Wunschreihenfolge.</p>
     <div class="playlist-grid" id="playlistGrid"></div>
+  </div>
+
+  <div id="wishlistBar" class="hidden" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:14px;">
+    <div style="flex:1;min-width:180px;font-size:13px;color:var(--muted);" id="wishlistSummary"></div>
+    <button class="playlist-btn" id="refreshReleasesBtn">🔄 Termine aktualisieren</button>
   </div>
 
   <div class="results-count" id="resultsCount"></div>
@@ -1115,6 +1125,54 @@ function buildYearPicker(pickerId, inputId, dropId, initial=[]) {
 }
 
 // ─── RENDER ───────────────────────────────────────────────────────────────
+// ─── ERSCHEINUNGSTERMINE ──────────────────────────────────────────────────
+function isReleased(g){
+  if(!g.releaseTs)return null;             // unbekannt
+  return g.releaseTs*1000<=Date.now();
+}
+
+function daysUntilRelease(g){
+  if(!g.releaseTs)return null;
+  return Math.ceil((g.releaseTs*1000-Date.now())/86400000);
+}
+
+function formatReleaseDate(g){
+  if(!g.releaseTs)return g.releaseHuman||'Termin offen';
+  const d=new Date(g.releaseTs*1000);
+  return d.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'});
+}
+
+// Kurztext für die Kachel: „Erschienen", „in 12 Tagen" oder das Datum
+function releaseBadgeText(g){
+  const released=isReleased(g);
+  if(released===null)return g.releaseHuman||'Termin offen';
+  if(released)return '✅ Erschienen';
+  const days=daysUntilRelease(g);
+  if(days===0)return '🎉 Heute!';
+  if(days===1)return '⏳ Morgen';
+  if(days<=60)return `⏳ in ${days} Tagen`;
+  return '📅 '+formatReleaseDate(g);
+}
+
+function releaseBadgeClass(g){
+  const released=isReleased(g);
+  if(released===null)return 'rel-unknown';
+  if(released)return 'rel-out';
+  const days=daysUntilRelease(g);
+  return days<=30?'rel-soon':'rel-future';
+}
+
+// Wunschliste nach Termin sortieren: nächstes zuerst, Unbekanntes ans Ende
+function sortByRelease(arr){
+  return [...arr].sort((a,b)=>{
+    const at=a.releaseTs, bt=b.releaseTs;
+    if(at&&bt)return at-bt||a.title.localeCompare(b.title,'de');
+    if(at)return -1;
+    if(bt)return 1;
+    return a.title.localeCompare(b.title,'de');
+  });
+}
+
 function getFiltered(){
   let result=games.filter(g=>{
     const plats=getPlatforms(g);
@@ -1126,7 +1184,8 @@ function getFiltered(){
       &&(!yearFilter||years.includes(yearFilter))
       &&(!releaseYearFilter||String(g.releaseYear||'')=== releaseYearFilter);
   });
-  result=sortGames(result, sortOrder);
+  // In der Wunschliste zählt der Erscheinungstermin, nicht die Sortierauswahl
+  result=activeTab==='wishlist'?sortByRelease(result):sortGames(result, sortOrder);
   return result;
 }
 
@@ -1237,6 +1296,7 @@ function render(){
   const list=document.getElementById('gameList'),empty=document.getElementById('emptyState');
   const playlistSection=document.getElementById('playlistSection');
   updateStats();
+  updateLinkBadge();
 
   // PLAYLIST TAB → different view
   if(activeTab==='playlist'){
@@ -1258,6 +1318,24 @@ function render(){
   if(fb)fb.style.display='';
 
   if(playlistSection)playlistSection.style.display='none';
+
+  // Wunschlisten-Leiste nur im passenden Tab
+  const wbar=document.getElementById('wishlistBar');
+  if(wbar){
+    if(activeTab==='wishlist'){
+      wbar.classList.remove('hidden');
+      const wl=games.filter(g=>g.status==='wishlist');
+      const missing=wl.filter(g=>g.igdbId&&!g.releaseTs).length;
+      const out=wl.filter(g=>isReleased(g)===true).length;
+      const parts=[];
+      if(out)parts.push(`${out} bereits erschienen`);
+      if(missing)parts.push(`${missing} ohne Termin`);
+      document.getElementById('wishlistSummary').textContent=
+        parts.length?parts.join(' · '):'Alle Termine sind hinterlegt.';
+    }else{
+      wbar.classList.add('hidden');
+    }
+  }
 
   const filtered=getFiltered();
 
@@ -1289,6 +1367,9 @@ function render(){
       :`<div class="game-tile-cover-ph">🎮</div>`;
     const playlistBadge=inPlaylist(g.id)?'<div class="game-tile-playlist" title="In Playlist">🎯</div>':'';
     const favBadge=g.isFavorite?`<div class="game-tile-fav" title="Lieblingsspiel"${inPlaylist(g.id)?' style="top:24px;"':''}>👑</div>`:'';
+    const relLine=g.status==='wishlist'
+      ? `<div class="tile-release ${releaseBadgeClass(g)}">${esc(releaseBadgeText(g))}</div>`
+      : '';
     return`<div class="game-card" data-id="${g.id}" onclick="openDetail(${g.id})">
       ${coverHtml}
       <div class="game-tile-status ${dot}" title="${STATUS_LABELS[g.status]||''}"></div>
@@ -1296,6 +1377,7 @@ function render(){
       ${favBadge}
       <div class="game-tile-footer">
         <div class="game-tile-title">${esc(g.title)}</div>
+        ${relLine}
       </div>
     </div>`;
   }).join('');
@@ -1541,6 +1623,11 @@ function openDetail(id){
   const rows=[];
   if(plats.length) rows.push({label:'Plattform',val:plats.map(p=>`<span class="tag tag-platform">${esc(p)}</span>`).join(' ')});
   if(g.isFavorite) rows.push({label:'Lieblingsspiel',val:'👑 Ja'});
+  if(g.releaseTs||g.releaseHuman){
+    const rel=isReleased(g);
+    const txt=formatReleaseDate(g)+(rel===false?` <span style="color:#fb923c;">(in ${daysUntilRelease(g)} Tagen)</span>`:rel===true?' <span style="color:var(--green);">✅</span>':'');
+    rows.push({label:rel===false?'Erscheint am':'Erschienen am',val:txt});
+  }
   if(g.plays) rows.push({label:'Durchläufe',val:`${g.plays}×`});
   if(years.length) rows.push({label:'Durchgespielt',val:years.map(y=>`<span class="tag tag-year">📅 ${y}</span>`).join(' ')});
   if(g.notes) rows.push({label:'Notizen',val:`<em style="color:var(--muted)">${esc(g.notes)}</em>`});
@@ -1670,10 +1757,11 @@ function pickRawg(g){
     const p=document.getElementById('coverPreview');p.src=g.cover;p.classList.add('visible');
     document.getElementById('coverPickerHint').style.display='block';
   }
-  // Release year
+  // Release year + exaktes Datum
   if(g.year){
     setSelect('newReleaseYear',String(g.year));
   }
+  pendingRelease={ts:g.releaseTs||null,human:g.releaseHuman||null};
   // Genre — first match wins
   if(Array.isArray(g.genres)){
     for(const name of g.genres){const m=GENRE_MAP[name];if(m){setSelect('newGenre',m);break;}}
@@ -1721,11 +1809,16 @@ document.getElementById('saveGame').addEventListener('click',()=>{
     notes:document.getElementById('newNotes').value.trim(),
     coverUrl:document.getElementById('newCoverUrl').value||'',
     igdbId:currentRawgId||null,
+    releaseTs:pendingRelease.ts,
+    releaseHuman:pendingRelease.human,
   });
   setAddFormOpen(false);save(games);clearAddForm();render();
 });
 
+let pendingRelease={ts:null,human:null};
+
 function clearAddForm(){
+  pendingRelease={ts:null,human:null};
   ['newTitle','newNotes','newPlays','newCoverUrl','rawgSearch'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('newFavorite').checked=false;
   document.getElementById('newRating').selectedIndex=0;
@@ -2022,6 +2115,8 @@ document.getElementById('csvImportFile').addEventListener('change',function(){
         notes:'',
         coverUrl:gameData?.cover||'',
         igdbId:gameData?.id||null,
+        releaseTs:gameData?.releaseTs||null,
+        releaseHuman:gameData?.releaseHuman||null,
       });
 
       if(gameData)imported++;else notFound++;
@@ -2218,6 +2313,50 @@ document.getElementById('playlistPickSearch').addEventListener('input',e=>render
 document.getElementById('playlistRandomPool').addEventListener('change',updatePlaylistRandomInfo);
 document.getElementById('playlistRandomConfirm').addEventListener('click',runPlaylistRandom);
 
+// ─── TERMINE AKTUALISIEREN ────────────────────────────────────────────────
+async function refreshReleaseDates(){
+  if(!cloudEnabled){
+    alert('Das Aktualisieren benötigt die Cloud-Verbindung.\n\nOben auf den Cloud-Status tippen und das Worker-Secret eintragen.');
+    return;
+  }
+  const targets=games.filter(g=>g.status==='wishlist'&&g.igdbId);
+  if(!targets.length){
+    alert('Keine verknüpften Spiele in der Wunschliste.\n\nNutze „🔗 IGDB verknüpfen", damit Termine abgerufen werden können.');
+    return;
+  }
+  const btn=document.getElementById('refreshReleasesBtn');
+  const label=btn.textContent;
+  btn.disabled=true;
+  let updated=0,failed=0;
+  for(let i=0;i<targets.length;i++){
+    btn.textContent=`⏳ ${i+1}/${targets.length}`;
+    const g=targets[i];
+    try{
+      const res=await fetch(`${WORKER_URL}/igdb/game?id=${encodeURIComponent(g.igdbId)}`,{
+        headers:{'Authorization':'Bearer '+WORKER_SECRET},
+        signal:AbortSignal.timeout(10000),
+      });
+      if(res.ok){
+        const d=await res.json();
+        if(d.game){
+          g.releaseTs=d.game.releaseTs||null;
+          g.releaseHuman=d.game.releaseHuman||null;
+          if(d.game.year)g.releaseYear=d.game.year;
+          updated++;
+        }
+      }else{failed++;}
+    }catch(e){failed++;}
+    await new Promise(r=>setTimeout(r,150));
+  }
+  btn.disabled=false;
+  btn.textContent=label;
+  save(games);
+  render();
+  alert(`Termine aktualisiert.\n\n${updated} Spiele aktualisiert${failed?`\n${failed} nicht erreichbar`:''}`);
+}
+
+document.getElementById('refreshReleasesBtn').addEventListener('click',refreshReleaseDates);
+
 // ─── IGDB VERKNÜPFEN ──────────────────────────────────────────────────────
 let linkQueue=[], linkIndex=0, linkResultCache=[];
 
@@ -2226,10 +2365,13 @@ function gamesNeedingLink(){
 }
 
 function updateLinkBadge(){
+  const btn=document.getElementById('linkIgdbBtn');
   const el=document.getElementById('linkIgdbCount');
-  if(!el)return;
+  if(!btn||!el)return;
   const n=gamesNeedingLink().length;
   el.textContent=n?`(${n})`:'';
+  // Knopf nur zeigen, solange es etwas zu verknüpfen gibt
+  btn.style.display=n?'':'none';
 }
 
 function openLinkWizard(){
@@ -2330,6 +2472,8 @@ function linkApply(r){
   g.title=r.name||g.title;
   if(r.cover)g.coverUrl=r.cover;
   if(r.year)g.releaseYear=r.year;
+  g.releaseTs=r.releaseTs||null;
+  g.releaseHuman=r.releaseHuman||null;
   if(Array.isArray(r.genres)){
     for(const name of r.genres){const m=GENRE_MAP[name];if(m){g.genre=m;break;}}
   }
