@@ -319,7 +319,7 @@
         <label class="hdr-btn" for="csvImportFile" style="background:rgba(124,58,237,0.15);border-color:rgba(124,58,237,0.4);color:#a78bfa;">📋 CSV importieren</label>
         <input type="file" id="csvImportFile" accept=".csv,.txt" style="display:none;">
         <button class="hdr-btn" id="linkIgdbBtn" style="background:rgba(0,212,255,0.12);border-color:rgba(0,212,255,0.35);color:var(--accent);">🔗 IGDB verknüpfen <span id="linkIgdbCount" style="opacity:0.7;font-size:11px;"></span></button>
-        <div style="color:var(--muted);font-size:12px;letter-spacing:1px;">powered by <span class="rawg-badge">IGDB</span> <span style="opacity:0.4;font-size:11px;margin-left:6px;">v1.5.1</span></div>
+        <div style="color:var(--muted);font-size:12px;letter-spacing:1px;">powered by <span class="rawg-badge">IGDB</span> <span style="opacity:0.4;font-size:11px;margin-left:6px;">v1.6.0</span></div>
       </div>
     </div>
   </header>
@@ -394,6 +394,15 @@
         <label>Durchgespielt in</label>
         <select id="yearFilter"><option value="">Alle Jahre</option></select>
       </div>
+      <div class="fp-group" id="categoryFilterGroup" style="display:none;">
+        <label>Kategorie</label>
+        <select id="categoryFilter">
+          <option value="">Alle Kategorien</option>
+          <option value="bucket">Bucket List</option>
+          <option value="replay">Wiederspielen</option>
+          <option value="new">Neuerscheinung</option>
+        </select>
+      </div>
       <div class="fp-group">
         <label>Sortierung</label>
         <select id="sortSelect">
@@ -446,6 +455,15 @@
           <option value="backlog" selected>Backlog</option>
           <option value="wishlist">Wunschliste</option>
           <option value="dropped">Abgebrochen</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Kategorie</label>
+        <select id="newCategory">
+          <option value="">– keine –</option>
+          <option value="bucket">Bucket List</option>
+          <option value="replay">Wiederspielen</option>
+          <option value="new">Neuerscheinung</option>
         </select>
       </div>
       <div class="form-group">
@@ -617,6 +635,15 @@
           <option value="backlog">Backlog</option>
           <option value="wishlist">Wunschliste</option>
           <option value="dropped">Abgebrochen</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Kategorie</label>
+        <select id="editCategory">
+          <option value="">– keine –</option>
+          <option value="bucket">Bucket List</option>
+          <option value="replay">Wiederspielen</option>
+          <option value="new">Neuerscheinung</option>
         </select>
       </div>
       <div class="form-group">
@@ -969,7 +996,7 @@ function setCloudStatus(s){
   el.style.color=m.c;
 }
 
-let activeTab='all',searchQuery='',platformFilter='',genreFilter='',yearFilter='',releaseYearFilter='',sortOrder='az';
+let activeTab='all',searchQuery='',platformFilter='',genreFilter='',yearFilter='',releaseYearFilter='',sortOrder='az',categoryFilter='';
 // "Als Nächstes" — ordered list of up to 5 games the user plans to play next
 let playlist={slots:5, gameIds:[]};
 const PLAYLIST_STORAGE_KEY='gamevault_playlist_v1';
@@ -1182,7 +1209,8 @@ function getFiltered(){
       &&(!platformFilter||(platformFilter==='__none__'?plats.length===0:plats.includes(platformFilter)))
       &&(!genreFilter||(genreFilter==='__none__'?!g.genre:g.genre===genreFilter))
       &&(!yearFilter||years.includes(yearFilter))
-      &&(!releaseYearFilter||String(g.releaseYear||'')=== releaseYearFilter);
+      &&(!releaseYearFilter||String(g.releaseYear||'')=== releaseYearFilter)
+      &&(activeTab!=='backlog'||!categoryFilter||(categoryFilter==='__none__'?!g.category:g.category===categoryFilter));
   });
   // In der Wunschliste zählt der Erscheinungstermin, nicht die Sortierauswahl
   result=activeTab==='wishlist'?sortByRelease(result):sortGames(result, sortOrder);
@@ -1286,7 +1314,7 @@ function updateStats(){
   const plEl=document.getElementById('tc-playlist');
   if(plEl)plEl.textContent=playlist.gameIds.length;
   // filter badge
-  const active=[platformFilter,genreFilter,releaseYearFilter,yearFilter].filter(Boolean).length;
+  const active=[platformFilter,genreFilter,releaseYearFilter,yearFilter,(activeTab==='backlog'?categoryFilter:'')].filter(Boolean).length;
   const badge=document.getElementById('filterBadge');
   if(badge){badge.textContent=active;badge.classList.toggle('hidden',active===0);}
   updateYearFilter();
@@ -1316,6 +1344,18 @@ function render(){
   // Restore filter bar for normal views
   const fb=document.querySelector('.filter-bar');
   if(fb)fb.style.display='';
+
+  // Kategorie-Filter nur im Backlog-Tab anbieten
+  const catGroup=document.getElementById('categoryFilterGroup');
+  if(catGroup){
+    if(activeTab==='backlog'){
+      catGroup.style.display='';
+    }else{
+      catGroup.style.display='none';
+      // beim Verlassen zurücksetzen, damit er nicht unsichtbar weiterwirkt
+      if(categoryFilter){categoryFilter='';document.getElementById('categoryFilter').value='';}
+    }
+  }
 
   if(playlistSection)playlistSection.style.display='none';
 
@@ -1809,6 +1849,7 @@ document.getElementById('saveGame').addEventListener('click',()=>{
     notes:document.getElementById('newNotes').value.trim(),
     coverUrl:document.getElementById('newCoverUrl').value||'',
     igdbId:currentRawgId||null,
+    category:document.getElementById('newCategory').value||'',
     releaseTs:pendingRelease.ts,
     releaseHuman:pendingRelease.human,
   });
@@ -1824,6 +1865,7 @@ function clearAddForm(){
   document.getElementById('newRating').selectedIndex=0;
   document.getElementById('newReleaseYear').selectedIndex=0;
   document.getElementById('newGenre').selectedIndex=0;
+  document.getElementById('newCategory').selectedIndex=0;
   setSelect('newStatus','backlog');
   if(newPlatPicker)newPlatPicker.setSelected([]);
   if(newYearPicker)newYearPicker.setSelected([]);
@@ -1846,6 +1888,7 @@ function openEdit(id){
   document.getElementById('editPlays').value=g.plays||0;
   document.getElementById('editReleaseYear').value=g.releaseYear||'';
   document.getElementById('editFavorite').checked=!!g.isFavorite;
+  setSelect('editCategory',g.category||'');
   document.getElementById('editCoverUrl').value=g.coverUrl||'';
   const img=document.getElementById('editCoverImg');
   if(g.coverUrl){img.src=g.coverUrl;img.style.display='block';}else{img.style.display='none';}
@@ -1871,6 +1914,7 @@ document.getElementById('saveEdit').addEventListener('click',()=>{
   const ery=document.getElementById('editReleaseYear').value;
   g.releaseYear=ery!==''?parseInt(ery):null;
   g.isFavorite=document.getElementById('editFavorite').checked;
+  g.category=document.getElementById('editCategory').value||'';
   g.beatenYears=editYearPicker?editYearPicker.getSelected():[];
   g.notes=document.getElementById('editNotes').value.trim();
   autoCleanPlaylist();
@@ -1989,8 +2033,8 @@ function toggleFilterPanel(){
 }
 
 function resetFilters(){
-  platformFilter='';genreFilter='';releaseYearFilter='';yearFilter='';
-  ['platformFilter','genreFilter','releaseYearFilter','yearFilter'].forEach(id=>{
+  platformFilter='';genreFilter='';releaseYearFilter='';yearFilter='';categoryFilter='';
+  ['platformFilter','genreFilter','releaseYearFilter','yearFilter','categoryFilter'].forEach(id=>{
     const el=document.getElementById(id);if(el)el.selectedIndex=0;
   });
   render();
@@ -2006,6 +2050,7 @@ document.querySelectorAll('.tab').forEach(tab=>{
 document.getElementById('searchInput').addEventListener('input',e=>{searchQuery=e.target.value;render();});
 document.getElementById('platformFilter').addEventListener('change',e=>{platformFilter=e.target.value;render();});
 document.getElementById('genreFilter').addEventListener('change',e=>{genreFilter=e.target.value;render();});
+document.getElementById('categoryFilter').addEventListener('change',e=>{categoryFilter=e.target.value;render();});
 document.getElementById('releaseYearFilter').addEventListener('change',e=>{releaseYearFilter=e.target.value;render();});
 document.getElementById('yearFilter').addEventListener('change',e=>{yearFilter=e.target.value;render();});
 document.getElementById('sortSelect').addEventListener('change',e=>{sortOrder=e.target.value;render();});
